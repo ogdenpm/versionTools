@@ -5,7 +5,7 @@ rem locally install applications
 if [%1] == [] goto usage
 if [%2] neq [] goto start
 :usage
-echo usage: install installRoot file_with_path [configFile]
+echo usage: install file_with_path installRoot [configFile]
 echo        configFile defaults to installRoot\install.cfg
 echo.
 echo install.cfg contains lines of the form type,dir[,suffix]
