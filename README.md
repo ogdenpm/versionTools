@@ -52,8 +52,10 @@ All lines where srcDir matches the input file's immediate directory name are pro
 x86-Release,+prebuilt
 x86-Release,d:\bin,_32
 
-install path\x86-Release\myfile.exe .
-copies myfile to .\prebuilt\myfile.exe and d:\bin\myfile_32.exe
+install somepath\x86-Release\myfile.exe .
+copies somepath\x86-Release\myfile.exe to .\prebuilt\myfile.exe and d:\bin\myfile_32.exe
+
+A sample install.cfg can be found in repository
 
 # release.cmd
 
@@ -65,8 +67,10 @@ There are two additional files I use in builds
 
 ## version.c
 
-This contains a simple showVersion function which displays either a brief version and copyright message. With optional additional information on the target build, Git Hash and commit date and whether the application was built with uncommitted files or outside git control all together.
+This contains a simple showVersion function which displays a brief version and copyright message. It also optionally displays additional information on the target build, Git Hash, commit date and whether the application was built with uncommitted files or outside git control all together.
 
 ## version.rc
 
 A template file for a windows resource file for the file version information. The main customisation would be to the description.
+
+If you use either of version.c or version.rc for your own projects, don't forget to change the copyright. 
