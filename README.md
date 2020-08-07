@@ -9,13 +9,14 @@ This is the main tool for generating version information from git, some of the i
 
 see: https://github.com/Thell/git-vs-versioninfo-gen/blob/master/GIT-VS-VERSION-GEN.bat
 
-**Usage:** version [--help] | [--quiet] [--force] [*CACHE_PATH* *OUT_FILE*]
+**Usage:** version [-h] | [-q] [-f] \[-a appid\] [*CACHE_PATH* *OUT_FILE*]
 
 | Where      |                                                              |
 | ---------- | ------------------------------------------------------------ |
-| --help     | displays usage information                                   |
-| --quiet    | suppresses console output                                    |
-| --force    | ignores any cached version information                       |
+| -h         | displays usage information                                   |
+| -q         | suppresses console output                                    |
+| -f         | ignores any cached version information                       |
+| -a appid   | sets the appid tag to use. An appid of '.' uses the current directory name.<br />Note this overrides any GIT_APPID in the version.in file. |
 | CACHE_PATH | a directory where an untracked cache info file is stored     |
 | OUT_FILE   | path to a writeable file where the generated information is stored |
 
