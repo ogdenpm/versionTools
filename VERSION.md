@@ -72,13 +72,15 @@ The batch file **verison.cmd** managed the generation of the version information
 
 options are
 
-**--help** shows a simple summary of how to use the script
+**-h** shows a simple summary of how to use the script
 
-**--quiet** don't show the version information to the console
+**-q** don't show the version information to the console
 
-**--force** override the use of the cached information
+**-f** override the use of the cached information
 
-Mode 1 will calculate the version and show the information on the console. This can also be used to get version information for any directory tree, which is potentially useful for none build situations.
+**-a appid** sets the appid to use. An appid of . is replaced by the current directory name. The value overrides any existing name in version.in
+
+Mode 1 will calculate the version and show the information on the console. This can also be used to get version information for any directory tree, which is potentially useful for none build situations; the **-a appid** option may also be useful in this case.
 
 Mode 2 will generate a version file for use during the application build. The cacheDir has a file which records the previous version generated. When the script is invoked, if version hasn't changed the version file is not written. This helps optimise the build process if the version hasn't changed.
 
@@ -87,6 +89,7 @@ Mode 2 will generate a version file for use during the application build. The ca
 The following are the key steps in deriving the version information
 
 1. If the file version.in exists in the current directory, parse it to load in default values, but in particular get the appid (**GIT_APPID**) if there is one.
+   Note the command line **-a appid** option will override this.
 
 2. Get the current branch (**GIT_BRANCH**) and test if there are any uncommitted files for the current directory tree and set **GIT_QUALIFIER** to **.P** if there are. **GIT_BUILDTYPE** is set to **2** if uncommitted files else if **GIT_BRANCH** is not 'master'  set to 1 else set to 0
 
