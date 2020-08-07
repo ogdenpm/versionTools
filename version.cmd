@@ -191,7 +191,7 @@ goto :EOF
 IF EXIST "%HEADER_OUT_FILE%" (
     IF EXIST "%CACHE_FILE%" (
       if [%fFORCE%] == [1] goto :overwrite
-      FOR /F "tokens=*" %%A IN (%CACHE_FILE%) DO (
+      FOR /F "tokens=* usebackq" %%A IN ("%CACHE_FILE%") DO (
         IF "%%A" == "%GIT_VERSION%-%GIT_SHA1%" (
           IF NOT DEFINED fQUIET (
             ECHO Build version is assumed unchanged from: %GIT_VERSION%
