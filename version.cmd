@@ -46,36 +46,36 @@ IF "%~1" == "-h" GOTO USAGE
 :optloop
 IF "%~1" == "-q" SET fQUIET=1& SHIFT & goto :optloop
 IF "%~1" == "-f" SET fFORCE=1& SHIFT & goto :optloop
-if "%~1" neq "-a" goto :endopt
-if [%~2] == [] goto USAGE
+if "%~1" neq "-a" goto :endopt else if [%~2] == [] goto USAGE
 set GIT_APPID=%~2
 SHIFT & SHIFT & goto :optloop
 
 :endopt
-if [%~1] == [] goto START
+if [%~1] == [] if defined fQUIET goto USAGE else goto START
+set CACHE_DIR=%~df1\
+if [%~2] == [] goto USAGE
+set HEADER_OUT_FILE=%~df2
+set HEADER_DIR=%~dp2
+if [%3] neq [] goto USAGE
 
-IF EXIST %~1\NUL (
-  :: %1 is a path
-  SET CACHE_FILE=%~s1\GIT_VERSION_INFO
-  SHIFT
+:: above CACHE_DIR is forced to have a trailing \, fixup if now \\
+set CACHE_DIR=%CACHE_DIR:\\=\%
+:: make sure directory exists
+if not exist %CACHE_DIR% (
+    mkdir %CACHE_DIR%
+    if not exist %CACHE_DIR% goto USAGE
 )
+SET CACHE_FILE=%CACHE_DIR%GIT_VERSION_INFO
 
-IF [%~nx1] NEQ [] (
-  :: %1 is a file
-  SET HEADER_OUT_FILE=%~fs1
-  SHIFT
+:: make sure the HEADER_OUT_FILE directory exists
+set HEADER_DIR=%HEADER_DIR:\\=\%
+if not exist %HEADER_DIR% (
+    mkdir %HEADER_DIR%
+    if not exist %HEADER_DIR% goto USAGE
 )
-:: This should always be the last
-:: Some basic sanity checks
-IF DEFINED fQUIET (
-  IF NOT DEFINED HEADER_OUT_FILE GOTO USAGE
-)
-
-IF DEFINED CACHE_FILE (
-  SET CACHE_FILE=%CACHE_FILE:\\=\%
-  IF NOT DEFINED HEADER_OUT_FILE GOTO USAGE
-)
-GOTO START
+:: for some reason doing the inverse test fails!!!
+:: check we aren't trying to write to a directory rather than a file
+if not exist %HEADER_OUT_FILE%\ goto START
 
 :: --------------------
 :USAGE
@@ -93,7 +93,7 @@ ECHO  CACHE_PATH  - Path for non-tracked file to store git version info used
 ECHO  OUT_FILE    - Path to writable file where the generated information is saved
 ECHO.
 ECHO  Example pre-build event:
-ECHO  CALL $(SolutionDir)..\tools\VERSION.cmd "$(IntDir)" "$(ProjectDir)version.h"
+ECHO  CALL $(SolutionDir)scipts\version.cmd "Generated" "Generated\version.h"
 ECHO.
 GOTO :EOF
 

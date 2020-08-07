@@ -62,7 +62,7 @@ if [%DIR:~-1%] == [\] set DIR=%DIR:~0,-1%
 if not exist %DIR%\NUL mkdir %DIR%
 :: finalise the filename to use, adding in any suffix
 set FILE=%DIR%\%~n1%~4%~x1
-echo installing %~1 to %FILE%
+echo Installing %~1 to %FILE%
 copy /b /y "%~1" "%FILE%"
 goto :eof
 
