@@ -25,7 +25,7 @@ call $(SolutionDir)..\tools\VERSION.cmd "$(IntDir)" "$(ProjectDir)version.h"
 
 Note for Visual Sudio to get the event to trigger every time, add a dummy file to the additional dependencies.
 
-For more information on the generated data and logic, see the version.md file
+For more information on the generated data and logic, see the VERSION.md file
 
 ## fileVer.cmd
 
@@ -61,7 +61,7 @@ A sample install.cfg can be found in repository
 
 This is primarily for my personal use. It creates a new tag to manage versions of individual applications in a repository. It also generates a default version info file which is committed to the repository. This is used by version.cmd on systems where git has not been installed.
 
-See version.md for more details
+See VERSION.md for more details
 
 There are two additional files I use in builds
 

@@ -37,7 +37,7 @@ for /f "tokens=1,2 delims=. " %%A in ('"git status -s -b -uno -- . 2>NUL"') do (
 :gotQualifier
 if [%BRANCH%] == [HEAD] echo Cannot continue. Fix headless state before retrying & goto :eof
 if defined DIRTY call :askYN YN "Outstanding Commits. Continue anyway y/N" & if [!YN!] neq [y] goto :eof
-if [%BRANCH%] == [master] call :askYN YN "On master branch. Continue anyway y/N" & if [!YN!] neq [y] goto :eof
+if [%BRANCH%] neq [master] call :askYN YN "Not on master branch. Continue anyway y/N" & if [!YN!] neq [y] goto :eof
 
 
 if [%APPID%] neq [] set strPREFIX=%APPID%-

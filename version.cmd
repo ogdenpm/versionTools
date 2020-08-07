@@ -230,10 +230,10 @@ ECHO #endif>>"%HEADER_OUT_FILE%"
 :: --------------------
 IF DEFINED fQUIET GOTO :EOF
 ECHO Git App Id:           %defGIT_APPID%
-ECHO Git version:          %GIT_VERSION%
+ECHO Git Version:          %GIT_VERSION%
 ECHO Build type:           %GIT_BUILDTYPE%
 ECHO SHA1:                 %GIT_SHA1%
-ECHO App dir:              %GIT_APPDIR%
+ECHO App Dir:              %GIT_APPDIR%
 ECHO Committed:            %GIT_CTIME%
 GOTO :EOF
 
