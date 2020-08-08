@@ -1,4 +1,4 @@
-rem @echo off
+@echo off
 setlocal ENABLEDELAYEDEXPANSION
 
 if [%~1] == [] goto START
