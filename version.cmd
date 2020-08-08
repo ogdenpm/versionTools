@@ -46,12 +46,12 @@ IF "%~1" == "-h" GOTO USAGE
 :optloop
 IF "%~1" == "-q" SET fQUIET=1& SHIFT & goto :optloop
 IF "%~1" == "-f" SET fFORCE=1& SHIFT & goto :optloop
-if "%~1" neq "-a" goto :endopt else if [%~2] == [] goto USAGE
+if "%~1" neq "-a" (goto :endopt) else if [%~2] == [] goto USAGE
 set GIT_APPID=%~2
 SHIFT & SHIFT & goto :optloop
 
 :endopt
-if [%~1] == [] if defined fQUIET goto USAGE else goto START
+if [%~1] == [] if defined fQUIET (goto USAGE) else goto START
 set CACHE_DIR=%~df1\
 if [%~2] == [] goto USAGE
 set HEADER_OUT_FILE=%~df2
@@ -171,8 +171,9 @@ if [%GIT_BRANCH%] neq [master] set GIT_QUALIFIER=%GIT_QUALIFIER%-%GIT_BRANCH%
 :: get the current SHA1 and commit time for items in this directory
 for /f "tokens=1,2" %%A in ('git log -1 "--format=%%h %%ct" -- .') do (
     set GIT_SHA1=%%A
-    call :gmTime GIT_CTIME %%B
+    set UNIX_CTIME=%%B
 )
+call :gmTime GIT_CTIME UNIX_CTIME
 
 if defined GIT_APPID set strPREFIX=%GIT_APPID%-
 :: Use git tag to get the lastest tag applicable to the contents of this directory
@@ -184,7 +185,12 @@ for /f "tokens=1"  %%A in ('git tag -l %strPREFIX%[0-9]*.*[0-9] --sort=-v:refnam
 
 if [%strTAG%] neq [] set strFROM=%strTAG%..
 :: get the commits in play
+:: two options for calculating commits
+:: option 1 allows for all commits on all branches
+:: option 2 only shows commits for the current branch
+:: for /f "tokens=1" %%A in ('git rev-list --branches --count %strFROM%HEAD --until=%UNIX_CTIME% -- .') do set GIT_COMMITS=%%A
 for /f "tokens=1" %%A in ('git rev-list --count %strFROM%HEAD -- .') do set GIT_COMMITS=%%A
+
 
 :: remove any appid prefix or provide default
 if [%strTAG%] neq [] (set strTAG=%strTAG:*-=%) else (set strTAG=0.0)

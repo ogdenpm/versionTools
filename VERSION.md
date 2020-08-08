@@ -13,7 +13,7 @@ Major.Minor.CommitCount \[.qualifier]\[-branch]
 | Component   | Notes                                                        |
 | ----------- | ------------------------------------------------------------ |
 | Major.Minor | This comes from a Git tag. See below for additional information |
-| CommitCount | This is the number of git commits form the application since the Git tag |
+| CommitCount | This is the number of git commits for the current application since the Git tag.<br />**Warning:** Comparing versions across branches is not reliable because the commit count reflects commits relevant to the current branch. Merging will account for the additional commits from the branch.<br />**version.cmd** has a commented out code option to make CommitCount take into account commits on all branches. Although fine for local use, when using a remote repository, unless all branches are shared, this will give different results |
 | qualifier   | Is only present in two cases<br />.P - if the version contains pre-committed files<br />.X - this is used when git is not available i.e. untracked files |
 | branch      | This is present if the version is not on the master branch.<br />Note headless versions have the branch name HEAD |
 
@@ -21,9 +21,9 @@ Major.Minor.CommitCount \[.qualifier]\[-branch]
 | ----------- | ------------------------------------------------------------ |
 | 1.2.0       | Built using a tagged Git version 1.2 on the master branch    |
 | 1.2.4       | Built using source which is 4 commits after 1.2.0 on the master branch |
-| 1.2.4.P     | Build using same base sources as 1.2.4 but has some modified / additional files, not yet committed to Git |
+| 1.2.4.P     | Build using same base sources as 1.2.4 but has some modified / additional files, not yet committed to Git - on the master branch |
 | 1.2.5-dev   | Built using source which is 5 commits after 1.2.0 on the dev branch |
-| 1.2.5.X-dev | Same as 1.2.5-dev above but has some modified / additional files, not yet uncommitted to Git |
+| 1.2.5.X-dev | Same as 1.2.5-dev above but has some modified / additional files, not yet uncommitted to Git - on the dev branch |
 | 1.2.0.X     | Built with files outside Git management, originally based on 1.2.0 sources |
 
 Note within windows resource files the file version is only displayed for numeric values. In this case the qualifier and branch are collapsed into a single digit.
@@ -86,6 +86,8 @@ Mode 2 will generate a version file for use during the application build. The ca
 
 ### How it works
 
+A number of ideas for the tool came from [GIT-VS-VERSION-GEN.bat](https://github.com/Thell/git-vs-versioninfo-gen/blob/master/GIT-VS-VERSION-GEN.bat), however there are significant differences in the implementation.
+
 The following are the key steps in deriving the version information
 
 1. If the file version.in exists in the current directory, parse it to load in default values, but in particular get the appid (**GIT_APPID**) if there is one.
@@ -106,7 +108,7 @@ The following are the key steps in deriving the version information
 6. Git is used to obtain the highest versioned tag (**strTAG**) matching **GIT_APPID-**\[0-9\]\*.\*\[0-9] which is on the path to the commit **GIT_SHA1**. Note the **GIT_APPID-** is omitted if there is no **GIT_APPID**. See note at end on the implications of this.
 
 7. The count of commits (**GIT_COMMITS**) from this tag to the commit identified in step 4 are obtained from Git. If no tag was found then the count is from the project's first commit
-   Note this count is limited to those impacting the current directory tree. This prevents commits on other projects incrementing the commit number
+   Note this count is limited to those impacting the current directory tree. This prevents commits on other projects incrementing the commit number. The count does however take into account changes on other branches
 
 8. Any **GIT_APPID-** prefix is removed from **strTAG** and if **strTAG** was not found it is set to **0.0** This is the Major.Minor part  of the version
 
