@@ -12,6 +12,8 @@ echo install.cfg contains lines of the form type,dir[,suffix]
 echo   Where type immediate parent directory name of the file to copy
 echo   dir is the directory to install to; a leading + is replaced by installRoot
 echo   suffix is inserted into the installed filename just before the .exe extension
+echo   a $d in the suffix is replaced by the current local date string in format yyyymmdd
+echo   and a $t is replaced by the current local time string in format hhmmss
 echo   All lines where type matches the input file's directory name are processed
 echo.
 echo Example with install.cfg in the current directory containing the line
@@ -51,7 +53,7 @@ goto :eof
 
 :: the core code to copy the file to the desired location
 :copy root src dir suffix
-setlocal
+setlocal enabledelayedexpansion
 :: work out install directory
 :: replacing + with installRoot, replacing any \\ with \ and remove any trailing \
 set DIR=%~3
@@ -60,8 +62,15 @@ set DIR=%DIR:\\=\%
 if [%DIR:~-1%] == [\] set DIR=%DIR:~0,-1%
 :: make sure we have a directory
 if not exist %DIR%\NUL mkdir %DIR%
+set SUFFIX=%~4
+if [%SUFFIX%] neq [] (
+:: map @ to local time in suffix
+    for /f "tokens=2 delims==." %%A in ('wmic os get LocalDateTime /format:list') do set NOW=%%A
+    call set SUFFIX=!SUFFIX:$d=%NOW:~,8%!
+    call set SUFFIX=!SUFFIX:$t=%NOW:~8,6%!
+)
 :: finalise the filename to use, adding in any suffix
-set FILE=%DIR%\%~n1%~4%~x1
+set FILE=%DIR%\%~n1%SUFFIX%%~x1
 echo Installing %~1 to %FILE%
 copy /b /y "%~1" "%FILE%"
 goto :eof

@@ -46,8 +46,13 @@ where configFile defaults to installRoot\install.cfg
 
 srcDir,dir[,suffix]
 
-Where type immediate parent directory name of the file to copy dir is the directory to install to, with a leading + replaced by installRoot.  Suffix is inserted into the installed filename just before the .exe extension
-All lines where srcDir matches the input file's immediate directory name are processed
+Where
+
+**srcDir** is the name compared with the  immediate parent directory name of file_with_path. If this matches the line is processed
+
+**dir** is the name of directory to install to, with a leading + replaced by installRoot. 
+
+**suffix** is inserted into the installed filename just before the .exe extension,  with a $d replaced by the local date in yyyymmdd format and $t replaced by the local time in hhmmss format
 
 **Example** with install.cfg in the current directory containing the lines
 x86-Release,+prebuilt
