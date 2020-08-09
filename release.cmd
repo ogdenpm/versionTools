@@ -48,7 +48,6 @@ for /f "tokens=1"  %%A in ('"git tag -l %strPREFIX%[0-9]*.*[0-9] --sort=-v:refna
 )
 :haveTag
 
-@echo on
 if [%strTAG%] == [] (
     if defined wantMAJOR (set newVERSION=1.0) else (set newVERSION=0.1)
     goto gotVersion
@@ -102,6 +101,7 @@ if defined wantMAJOR (
     set newMsg=Minor release %newVersion%.0 tag %newTAG%
 )
 git commit -m "%newMsg%" -e -- .
+if ERRORLEVEL 1 goto :eof
 git tag -a -m "%newMsg%" %newTAG%
 goto :eof
 
