@@ -1,4 +1,4 @@
-# !/usr/bin/perl
+#! /usr/bin/perl 
 # this is perl port of version.cmd
 use File::Path qw(make_path);
 use File::Basename;

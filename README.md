@@ -11,6 +11,8 @@ see: https://github.com/Thell/git-vs-versioninfo-gen/blob/master/GIT-VS-VERSION-
 
 The version.cmd variant is for use in windows and the perl variant version.pl is for either windows or unix/linux.
 
+**Warning**, if you use the #! syntax to start perl in unix/linux, please make sure the file is saved in unix format, otherwise you will get an error
+
 **Usage:** version [-h] | [-q] [-f] \[-a appid\] [*CACHE_PATH* *OUT_FILE*]
 
 | Where      |                                                              |
