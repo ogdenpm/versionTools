@@ -3,11 +3,13 @@ Scripts I use to manage application versioning
 
 The tools here are
 
-## version.cmd
+## version.cmd or version.pl
 
 This is the main tool for generating version information from git, some of the ideas were taken from the tool GIT-VS-VERSION-GEN.bat
 
 see: https://github.com/Thell/git-vs-versioninfo-gen/blob/master/GIT-VS-VERSION-GEN.bat
+
+The version.cmd variant is for use in windows and the perl variant version.pl is for either windows or unix/linux.
 
 **Usage:** version [-h] | [-q] [-f] \[-a appid\] [*CACHE_PATH* *OUT_FILE*]
 
