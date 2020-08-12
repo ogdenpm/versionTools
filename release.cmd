@@ -2,6 +2,7 @@
 setlocal ENABLEDELAYEDEXPANSION
 
 if [%~1] == [] goto START
+if /i [%~1] == [-v] (echo %0: Rev _REVISION_) & goto :EOF
 if /i [%~1] neq [major] goto USAGE
 set wantMAJOR=1
 goto START
@@ -9,7 +10,7 @@ goto START
 ::--------
 :USAGE
 ::--------
-echo Usage: release [major]
+echo Usage: release -v | [major]
 echo Requires confirmation if outstanding commits or on master branch
 goto :EOF
 

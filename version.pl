@@ -4,7 +4,6 @@ use File::Path qw(make_path);
 use File::Basename;
 use File::Copy;
 use Cwd qw(getcwd);
-use POSIX qw(strftime);
 
 $DEFAULTS_FILE = 'version.in';
 my %defaults;
@@ -191,6 +190,10 @@ sub writeOut {
 
 
 main:   # main code
+if (lc($ARGV[0]) eq "-v") {
+    print basename($0), ": Rev _REVISION_\n";
+    exit(0);
+}
 if (!getOpts()) {
     usage();
 } else {

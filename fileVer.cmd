@@ -5,6 +5,7 @@ REM  since creation.
 REM  Limitation is that it does not track moves or renames (except case change)
 ::
 :: Console output only
+if /I "%~1" == "-v" (echo %0: Rev _REVISION_) & goto :EOF
 set FILE=%~1
 if [%FILE%] == [] goto USAGE
 if exist "%FILE%" goto START

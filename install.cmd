@@ -1,7 +1,7 @@
 @echo off
 setlocal
 rem locally install applications
-
+if /I [%~1] == [-v] (echo %0: Rev _REVISION_) & goto :EOF
 if [%1] == [] goto usage
 if [%2] neq [] goto start
 :usage
