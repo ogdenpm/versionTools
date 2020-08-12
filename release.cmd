@@ -88,7 +88,7 @@ if defined writeDEFAULT (
     echo #define GIT_SHA1        "untracked">>"%DEFAULTS_FILE%"
     echo #define GIT_BUILDTYPE   3 >>"%DEFAULTS_FILE%"
     echo #define GIT_APPDIR      "%APPDIR%">>"%DEFAULTS_FILE%"
-    echo #define GIT_TIME        "%NOW%">>"%DEFAULTS_FILE%"
+    echo #define GIT_CTIME       "%NOW%">>"%DEFAULTS_FILE%"
     echo #define GIT_YEAR        "%NOW:~,4%">>"%DEFAULTS_FILE%"
     echo #endif>>"%DEFAULTS_FILE%"
     if [%writeDEFAULT%] == [2] git add %DEFAULTS_FILE%
