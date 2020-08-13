@@ -65,6 +65,18 @@ x86-Release,d:\bin,_32
 install somepath\x86-Release\myfile.exe .
 copies somepath\x86-Release\myfile.exe to .\prebuilt\myfile.exe and d:\bin\myfile_32.exe
 
+**install.cmd** now supports control lines in the install.cfg file. These determine which files the descriptor lines below it apply to. Subsequent control lines set new scope.
+
+The lines are of the form
+
+\+comma separated list of files or *
+
+-comma separated list of files or *
+
+The + version enables only the named files to be processed. \+* reenables processing for all files
+
+The -version will exclude only the named files from processing. \-* disables all processing (not particularly useful)
+
 A sample install.cfg can be found in repository
 
 ## release.cmd
