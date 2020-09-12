@@ -12,7 +12,7 @@ echo install.cfg contains lines of the form type,dir[,suffix]
 echo   Where type immediate parent directory name of the file to copy
 echo   dir is the directory to install to; a leading + is replaced by installRoot
 echo   suffix is inserted into the installed filename just before the .exe extension
-echo   In both dir & suffix a $d is replaced by the current local date string in format yyyymmdd
+echo   In both dir ^& suffix a $d is replaced by the current local date string in format yyyymmdd
 echo   and a $t is replaced by the current local time string in format hhmmss
 echo   All lines where type matches the input file's directory name are processed
 echo.
