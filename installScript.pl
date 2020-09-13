@@ -25,7 +25,7 @@ sub getRevision {
         }
         close $in;
     }
-    $qualifier .= "-$branch" unless $branch eq 'master';
+    $qualifier .= " {$branch}" unless $branch eq 'master';
 
     # get the relevant SHA1 and commit time
     open $in, "git log -a --format=\"%h %ct\" -- :(icase)$file |" or die $!;
@@ -34,8 +34,33 @@ sub getRevision {
     die "Cannot find information for " . basename($file) . "\n" if $sha1 eq "";
     $cTime = unix2GMT($uCTime);
 
+
+    # to work out the revision number git rev-list is used
+    # because files can be moved see a number of checks are done to see 
+    # what scope we should use to look for the file
+    # If the filename is unique we can search the whole repository
+    # If the filename does not have a directory specified and if its parent/filename is unique use it as the scope
+    # Otherwise check the filename only
+
+
+    # initially try the whole repository to see if only file with this name
+    my $scope=":(icase,top)*$file";
+    open my $in, "git ls-files HEAD -- \"$scope\" |" or die $!;
+    my @lines = <$in>;
+    close $in;
+    if ($#lines > 0) {
+        if ($file !~ /[\\\/]/) {    # is a simple file
+            my @parents = File::Spec->splitdir(realpath('.'));
+            $scope = ":(icase,top)*$parents[-1]/$file";
+            open my $in, "git ls-files HEAD -- \"$scope\" |" or die $!;
+            my @lines = <$in>;
+            close $in;
+        }
+    }
+    $scope = ":(icase)$file" if ($#lines != 0);
+
     # get the commits in play
-    open my $in, "git rev-list --count HEAD -- :(icase)$file |" or die $!;
+    open my $in, "git rev-list --count HEAD -- \"$scope\" |" or die $!;
     ($revision) = (<$in> =~ /(\d+)/);
     close $in;
     return "$revision$qualifier -- git $sha1 [" . substr($cTime, 0, 10) . "]";
@@ -51,11 +76,12 @@ if ($#ARGV == 0 && $ARGV[0] eq "-v") {
     my $dir = $ARGV[1];
     my $target = File::Spec->catfile(realpath($dir), $file);
     my $content;
-    my $revision = getRevision($file);
     if (realpath($file) eq $target) {
         print "Error: Source and Destination are the same file\n";
         exit(1);
     }
+    my $revision = getRevision($file);
+
     open $in, "<", $file or die $!; {
         local $/;
         $content = <$in>;

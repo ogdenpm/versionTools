@@ -1,15 +1,15 @@
-@echo off
+rem @echo off
 setlocal enabledelayedexpansion
 rem locally install applications
 if /I [%~1] == [-v] (echo %0: Rev _REVISION_) & goto :EOF
 if [%1] == [] goto usage
 if [%2] neq [] goto start
 :usage
-echo usage: %0 file_with_path installRoot [configFile]
+echo usage: %0 file installRoot [configFile]
 echo        configFile defaults to installRoot\install.cfg
 echo.
 echo install.cfg contains lines of the form type,dir[,suffix]
-echo   Where type immediate parent directory name of the file to copy
+echo   Where type is the immediate parent directory name of the file to copy
 echo   dir is the directory to install to; a leading + is replaced by installRoot
 echo   suffix is inserted into the installed filename just before the .exe extension
 echo   In both dir ^& suffix a $d is replaced by the current local date string in format yyyymmdd
@@ -34,7 +34,7 @@ exit /b 1
 :start
 
 :: find the path to the target file
-for %%I in ("%1") do set PATHTO=%%~pI
+set PATHTO=%~p1
 :: get the directory as a filename by removing trailing \
 for %%I in ("%PATHTO:~,-1%") do set PARENT=%%~nxI
 set FILE=%~nx1
