@@ -1,4 +1,4 @@
-rem @echo off
+@echo off
 setlocal enabledelayedexpansion
 rem locally install applications
 if /I [%~1] == [-v] (echo %0: Rev _REVISION_) & goto :EOF
