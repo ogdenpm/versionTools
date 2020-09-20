@@ -9,7 +9,8 @@ echo usage: %0 file installRoot [configFile]
 echo        configFile defaults to installRoot\install.cfg
 echo.
 echo install.cfg contains lines of the form type,dir[,suffix]
-echo   Where type is the immediate parent directory name of the file to copy
+echo   Where type is the first parent directory name of the file to copy
+echo   which ends in Release or Debug. 
 echo   dir is the directory to install to; a leading + is replaced by installRoot
 echo   suffix is inserted into the installed filename just before the .exe extension
 echo   In both dir ^& suffix a $d is replaced by the current local date string in format yyyymmdd
@@ -33,11 +34,23 @@ exit /b 1
 
 :start
 
+:: basic filename
+set FILE=%~nx1
 :: find the path to the target file
 set PATHTO=%~p1
+:getType
 :: get the directory as a filename by removing trailing \
-for %%I in ("%PATHTO:~,-1%") do set PARENT=%%~nxI
-set FILE=%~nx1
+for %%I in ("%PATHTO:~,-1%") do (
+    set PARENT=%%~nxI
+    set PATHTO=%%~pI
+)
+if /I [%PARENT:~-5,5%] == [Debug] goto gotparent
+if /I [%PARENT:~-7,7%] == [Release] goto gotparent
+if [%PARENT%] neq [\] goto getType
+echo Cannot find Release or Debug component in "%~1"
+goto usage
+
+:gotparent
 
 if [%3] == [] (
     set CONFIGFILE=%2\install.cfg
