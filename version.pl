@@ -185,7 +185,7 @@ sub writeOut {
         } else {
             $GIT_VERSION_RC =~ s/,/./g;
             print $out "namespace GitVersionInfo {\n";
-            print $out "  public class GitVersionInfo {\n";
+            print $out "  public partial class GitVersionInfo {\n";
             print $out "    public const string GIT_APPNAME    = \"$GIT_APPNAME\";\n";
             print $out "    public const string GIT_VERSION    = \"$GIT_VERSION\";\n";
             print $out "    public const string GIT_VERSION_RC = \"$GIT_VERSION_RC\";\n";

@@ -249,7 +249,7 @@ ECHO #define GIT_YEAR        "%GIT_CTIME:~,4%">>"%HEADER_OUT_FILE%"
 ECHO #endif>>"%HEADER_OUT_FILE%"
 ) ELSE (
 ECHO namespace GitVersionInfo {>>"%HEADER_OUT_FILE%"
-ECHO   public class VersionInfo {>>"%HEADER_OUT_FILE%"
+ECHO   public partial class VersionInfo {>>"%HEADER_OUT_FILE%"
 ECHO     public const string GIT_APPNAME    = "%GIT_APPNAME%";>>"%HEADER_OUT_FILE%"
 ECHO     public const string GIT_VERSION    = "%GIT_VERSION%";>>"%HEADER_OUT_FILE%"
 ECHO     public const string GIT_VERSION_RC = "%GIT_VERSION_RC:,=.%";>>"%HEADER_OUT_FILE%"
