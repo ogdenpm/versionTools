@@ -83,11 +83,12 @@ if defined writeDEFAULT (
     echo #ifndef v%newVERSION:.=_%_0_3>>"%DEFAULTS_FILE%"
     echo #define v%newVERSION:.=_%_0_3>>"%DEFAULTS_FILE%"
     if [%APPID%] neq [] echo #define GIT_APPID       "%APPID%">>"%DEFAULTS_FILE%"
+    echo #define GIT_APPNAME     "%APPNAME%">>"%DEFAULTS_FILE%"
     echo #define GIT_VERSION     "%GIT_VERSION%">>"%DEFAULTS_FILE%"
     echo #define GIT_VERSION_RC  %newVERSION:.=,%,0,3 >>"%DEFAULTS_FILE%"
     echo #define GIT_SHA1        "untracked">>"%DEFAULTS_FILE%"
     echo #define GIT_BUILDTYPE   3 >>"%DEFAULTS_FILE%"
-    echo #define GIT_APPDIR      "%APPDIR%">>"%DEFAULTS_FILE%"
+    if defined hasAPPDIR echo #define GIT_APPDIR      "%APPDIR%">>"%DEFAULTS_FILE%"
     echo #define GIT_CTIME       "%NOW%">>"%DEFAULTS_FILE%"
     echo #define GIT_YEAR        "%NOW:~,4%">>"%DEFAULTS_FILE%"
     echo #endif>>"%DEFAULTS_FILE%"
@@ -101,6 +102,9 @@ if defined wantMAJOR (
 ) else (
     set newMsg=Minor release %newVersion%.0 tag %newTAG%
 )
+:: clear any error
+verify >NUL
+echo on
 git commit -m "%newMsg%" -e -- .
 if ERRORLEVEL 1 goto :eof
 git tag -a -m "%newMsg%" %newTAG%
@@ -110,12 +114,11 @@ goto :eof
 if exist %DEFAULTS_FILE% (
     set writeDEFAULT=1
     for /f "tokens=1,2,*" %%A in (%DEFAULTS_FILE%) do (
-        if [%%B] == [GIT_APPID] (
-            set APPID=%%~C
-            goto :eof
-        )
+        if [%%B] == [GIT_APPID] set APPID=%%~C
+        if [%%B] == [GIT_APPDIR] set hasAPPDIR
+        if [%%B] == [GIT_APPNAME] set APPNAME=%%~C
     )
-    goto :eof
+    goto :forceName
 ) 
 set /p YN=No %DEFAULTS_FILE%. Create one y/N? 
 if [%YN%] == [] goto :eof
@@ -123,6 +126,9 @@ if /i [%YN:~,1%] neq [y] goto :EOF
 set writeDEFAULT=2
 set /p APPID=Enter AppId - using . will default to %APPDIR%? 
 if [%APPID%] == [.] set APPID=%APPDIR%
+set /p APPNAME=Enter Application name - will default to %APPDIR%? 
+:forceName
+if [%APPNAME%] == [] set APPNAME=%APPDIR%
 goto :EOF
 
 
