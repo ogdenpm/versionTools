@@ -5,12 +5,6 @@
 // use the following function declaration in the main code
 void showVersion(FILE *fp, bool full);
 
-#ifdef GIT_APPID
-#define APPNAME GIT_APPID
-#else
-#define APPNAME GIT_APPDIR
-#endif
-
 void showVersion(FILE *fp, bool full) {
 
     fputs(APPNAME " " GIT_VERSION, fp);

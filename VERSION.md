@@ -84,6 +84,8 @@ Mode 1 will calculate the version and show the information on the console. This 
 
 Mode 2 will generate a version file for use during the application build. The cacheDir has a file which records the previous version generated. When the script is invoked, if version hasn't changed the version file is not written. This helps optimise the build process if the version hasn't changed.
 
+Note if the versionFile ends in .cs, then a C# VersionAssembly file is created rather than a C/C++ include file.
+
 ### How it works
 
 A number of ideas for the tool came from [GIT-VS-VERSION-GEN.bat](https://github.com/Thell/git-vs-versioninfo-gen/blob/master/GIT-VS-VERSION-GEN.bat), however there are significant differences in the implementation.
@@ -120,16 +122,17 @@ The following are the key steps in deriving the version information
 
 12. In mode 2 the following information is written to the versionFile using #define statements
 
-    | Label          | Type   | Value                                                        |
-    | -------------- | ------ | ------------------------------------------------------------ |
-    | GIT_APPID      | String | GIT_APPID from step 1. Note omitted if GIT_APPID is blank    |
-    | GIT_VERSION    | String | GIT_VERSION from step 9 or from version.in if no Git support |
-    | GIT_VERSION_RC | CSV    | strTAG,GIT_COMMITS,GIT_BUILDTYPE with dot in strTAG replaced with a comma. Value from version.in used if no Git support |
-    | GIT_SHA1       | String | GIT_SHA1 value from step 5, or set to "untracked" if no Git support |
-    | GIT_BUILDTYPE  | Number | GIT_BUILDTYPE from step 2 or set to 3 if no Git support      |
-    | GIT_APPDIR     | String | The immediate parent directory. This is potentially useful for naming an app if GIT_APPID is not set |
-    | GIT_CTIME      | String | GIT_CTIME in format YYYY-MM-DD HH:MM:SS. All times are in GMT so are reproducible globally. This is found in step 5 or from version.in if no Git support |
-    | GIT_YEAR       | String | First 4 characters of GIT_CTIME. Useful for copyright year   |
+    | Label          | Type          | Value                                                        |
+    | -------------- | ------------- | ------------------------------------------------------------ |
+    | GIT_APPID      | String        | GIT_APPID from step 1. Note omitted if GIT_APPID is blank also not used in C# generated file |
+    | GIT_APPNAME    | String        | The application name - note preferred replacement for GIT_APPDIR. Taken from version.in or defaults to parent directory |
+    | GIT_VERSION    | String        | GIT_VERSION from step 9 or from version.in if no Git support |
+    | GIT_VERSION_RC | CSV or String | strTAG,GIT_COMMITS,GIT_BUILDTYPE with dot in strTAG replaced with a comma. Value from version.in used if no Git support.  For C# commas are replaced by dot and the value is a String rather than CSV. |
+    | GIT_SHA1       | String        | GIT_SHA1 value from step 5, or set to "untracked" if no Git support |
+    | GIT_BUILDTYPE  | Number        | GIT_BUILDTYPE from step 2 or set to 3 if no Git support      |
+    | GIT_APPDIR     | String        | **Depreciated**. The current application directory taken from version.in or defaulting to the immediate parent directory. |
+    | GIT_CTIME      | String        | GIT_CTIME in format YYYY-MM-DD HH:MM:SS. All times are in GMT so are reproducible globally. This is found in step 5 or from version.in if no Git support |
+    | GIT_YEAR       | String        | First 4 characters of GIT_CTIME. Useful for copyright year   |
 
 13. In mode 1 or mode 2 unless --quiet option is specified, the following information is shown on the console
 
@@ -139,7 +142,7 @@ The following are the key steps in deriving the version information
     | Git Version | GIT_VERSION from step 9 or from version.in if no Git support |
     | Build type  | GIT_BUILDTYPE from step 2 or set to 3 if no Git support      |
     | SHA1        | GIT_SHA1 value from step 5, or set to "untracked" if no Git support |
-    | App Dir     | he immediate parent directory                                |
+    | App Name    | The application name                                         |
     | Committed   | GIT_CTIME in format YYYY-MM-DD HH:MM:SS. All times are in GMT so are reproducible globally. This is found in step 5 or from version.in if no Git support |
 
 #### Note on step 6
@@ -158,14 +161,34 @@ This is a stripped down version of version.cmd, that identifies the file revisio
 
 Its primary use is for simple script files that don't have a build stage where the version information could be readily imported
 
+Note this now attempts to handle cases where a file has been moved. The following scenarios are handled
+
+1. Filename is unique in the repository, all changes to filename are counted. Handles file moves
+2. Directory/Filename is unique, counts all changes to the directory/filename combination. Handles directory moves.
+3. All other cases only the count of the file in its current location are handled.
+
+For all of the above the filename compare is done in a case insensitive way.
+
+There are cases where the above approach will be wrong, particularly if the filename has been reused after one with the same name has been previously deleted. In most cases the approach is expected to provide the correct result.
+
 **usage:** fileVer file
 
 Output shown on the console
 
-| Label     | Value                                                        |
-| --------- | ------------------------------------------------------------ |
-| File      | File name                                                    |
-| Revision  | This is the number of commits the file has been involved in, with a + suffix if currently modified but not committed |
-| Branch    | This is the current branch name or HEAD if not on a branch   |
-| Git hash  | The Git SHA1 corresponding to the file's checkout            |
-| Committed | The Git committed date corresponding to the file's checkout. The format is YYYY-MM-DD HH:MM:SS and is in GMT |
+```
+filename	Rev: nn[+][{branch}] -- git hashval '['date']'
+Where
+filename	file as specified on the command line
+nn			The number of commits the file has been involved in
++			added if the file is not yet committed
+{branch}	shown if not on master branch
+hashval		git SHA1
+date		date the file wsa last committed in YYYY-MM-DD format and is in GMT
+```
+
+------
+
+```
+Updated by Mark Ogden 19-Sep-2020
+```
+
