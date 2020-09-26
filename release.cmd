@@ -104,7 +104,6 @@ if defined wantMAJOR (
 )
 :: clear any error
 verify >NUL
-echo on
 git commit -m "%newMsg%" -e -- .
 if ERRORLEVEL 1 goto :eof
 git tag -a -m "%newMsg%" %newTAG%
