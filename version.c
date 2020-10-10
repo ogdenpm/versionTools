@@ -7,7 +7,7 @@ void showVersion(FILE *fp, bool full);
 
 void showVersion(FILE *fp, bool full) {
 
-    fputs(APPNAME " " GIT_VERSION, fp);
+    fputs(GIT_APPNAME " " GIT_VERSION, fp);
 #ifdef _DEBUG
     fputs(" {debug}", fp);
 #endif
