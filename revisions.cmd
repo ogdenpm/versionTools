@@ -18,14 +18,14 @@ goto :eof
 
 :execute
 
-for %%I in (*) do if /I [%%~xI] neq [.exe] if [%%~nI] neq [] call filever %QUIET% %%I
+for %%I in (*) do if /I [%%~xI] neq [.exe] call filever %QUIET% "%%I"
 
 if not defined RECURSE goto :eof
 
 for /D %%D in (*) do (
     if [%%~nD] neq [] (
         echo %%D\
-        for %%I in (%%D\*) do if /I [%%~xI] neq [.exe] if [%%~nI] neq [] call filever %QUIET% %%I
+        for %%I in (%%D\*) do if /I [%%~xI] neq [.exe] call filever %QUIET% "%%I"
     )
 )
 

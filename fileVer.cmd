@@ -6,7 +6,7 @@ REM  Limitation is that it does not track moves or renames (except case change)
 ::
 :: Console output only
 if /I "%~1" == "-v" (echo %0: Rev _REVISION_) & goto :EOF
-if "%1" == "-q" (
+if "%~1" == "-q" (
     set QUIET=1
     SHIFT /1
 )
@@ -18,7 +18,7 @@ set PATHTO=%~p1
 :: get the directory as a filename by removing trailing \
 for %%I in ("%PATHTO:~,-1%") do set PARENT=%%~nxI
 set FILE=%~1
-if [%~1] neq [%~nx1] set HASDIR=YES
+if "%~1" neq "%~nx1" set HASDIR=YES
 
 
 REM ===================
