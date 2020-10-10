@@ -6,6 +6,10 @@ REM  Limitation is that it does not track moves or renames (except case change)
 ::
 :: Console output only
 if /I "%~1" == "-v" (echo %0: Rev _REVISION_) & goto :EOF
+if "%1" == "-q" (
+    set QUIET=1
+    SHIFT /1
+)
 if [%1] == [] goto USAGE
 if not exist "%~1" goto USAGE
 ::
@@ -23,7 +27,7 @@ REM ===================
 :START
 CALL :GET_VERSION_STRING
 if [%GIT_SHA1%] == [] (
-        echo Cannot find Git information for %1
+        if not defined QUIET echo Cannot find Git information for %1
         exit /b 1
 )
 
@@ -41,7 +45,9 @@ exit /b 0
 :: --------------------
 :USAGE
 :: --------------------
-ECHO usage: fileVer file
+ECHO usage: fileVer [-v] ^| [-q] file
+ECHO where -v shows version info
+ECHO       -q supresses no Git info for file message 
 GOTO :EOF
 
 
