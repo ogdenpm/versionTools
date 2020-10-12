@@ -15,13 +15,13 @@ Major.Minor.CommitCount \[.qualifier]\[-branch]
 | Major.Minor | This comes from a Git tag. See below for additional information |
 | CommitCount | This is the number of git commits for the current application since the Git tag.<br />**Warning:** Comparing versions across branches is not reliable because the commit count reflects commits relevant to the current branch. Merging will account for the additional commits from the branch.<br />**version.cmd** has a commented out code option to make CommitCount take into account commits on all branches. Although fine for local use, when using a remote repository, unless all branches are shared, this will give different results |
 | qualifier   | Is only present in two cases<br />.P - if the version contains pre-committed files<br />.X - this is used when git is not available i.e. untracked files |
-| branch      | This is present if the version is not on the master branch.<br />Note headless versions have the branch name HEAD |
+| branch      | This is present if the version is not on the master/main branch.<br />Note headless versions have the branch name HEAD |
 
 | Example     | Meaning                                                      |
 | ----------- | ------------------------------------------------------------ |
-| 1.2.0       | Built using a tagged Git version 1.2 on the master branch    |
-| 1.2.4       | Built using source which is 4 commits after 1.2.0 on the master branch |
-| 1.2.4.P     | Build using same base sources as 1.2.4 but has some modified / additional files, not yet committed to Git - on the master branch |
+| 1.2.0       | Built using a tagged Git version 1.2 on the master/main branch |
+| 1.2.4       | Built using source which is 4 commits after 1.2.0 on the master/main branch |
+| 1.2.4.P     | Build using same base sources as 1.2.4 but has some modified / additional files, not yet committed to Git - on the master/main branch |
 | 1.2.5-dev   | Built using source which is 5 commits after 1.2.0 on the dev branch |
 | 1.2.5.X-dev | Same as 1.2.5-dev above but has some modified / additional files, not yet uncommitted to Git - on the dev branch |
 | 1.2.0.X     | Built with files outside Git management, originally based on 1.2.0 sources |
@@ -29,9 +29,9 @@ Major.Minor.CommitCount \[.qualifier]\[-branch]
 Note within windows resource files the file version is only displayed for numeric values. In this case the qualifier and branch are collapsed into a single digit.
 
 
-0 -> normal build on master branch
+0 -> normal build on master/main branch
 
-1 -> normal build not on master branch
+1 -> normal build not on master /main branch
 
 2 -> build with uncommitted files
 
@@ -95,7 +95,7 @@ The following are the key steps in deriving the version information
 1. If the file version.in exists in the current directory, parse it to load in default values, but in particular get the appid (**GIT_APPID**) if there is one.
    Note the command line **-a appid** option will override this.
 
-2. Get the current branch (**GIT_BRANCH**) and test if there are any uncommitted files for the current directory tree and set **GIT_QUALIFIER** to **.P** if there are. **GIT_BUILDTYPE** is set to **2** if uncommitted files else if **GIT_BRANCH** is not 'master'  set to 1 else set to 0
+2. Get the current branch (**GIT_BRANCH**) and test if there are any uncommitted files for the current directory tree and set **GIT_QUALIFIER** to **.P** if there are. **GIT_BUILDTYPE** is set to **2** if uncommitted files else if **GIT_BRANCH** is not 'master' or 'main'  set to 1 else set to 0
 
 3. If there is no branch, then git cannot be used. 
 
@@ -103,7 +103,7 @@ The following are the key steps in deriving the version information
    - In mode 2, copy file version.in  to versionFile and delete the cache file
    - in mode 1 or mode 2 without the --quiet option copy, populate version information using the defaults from step 1 and continue at step 13
 
-4. if **GIT_BRANCH** not equal to 'master' add **-GIT_BRANCH** to the **GIT_QUALIFIER**
+4. if **GIT_BRANCH** not equal to 'master' or 'main' add **-GIT_BRANCH** to the **GIT_QUALIFIER**
 
 5.  The commit hash (**GIT_SHA1**) and commit time (**GIT_CTIME**) for the most recent commit in relevant to the current directory are obtained from Git
 
@@ -149,11 +149,11 @@ The following are the key steps in deriving the version information
 
 The method calculating the latest applicable tag may not work for everyone. Taking two cases
 
-- branch merge into master. Here the commit will get the latest versioned tag from either the branch or master
-  - If master is ahead of the development branch this would be correct behaviour. Explicit tag can force a new version if necessary
-  - if master is behind the branch, then in most cases this will be valid, the exception is where a fix is done on a future development and there is a need to back port to the current master. For me this is not an issue as the scenario is unlikely to happen.
-    It can also be managed by not creating a tag on a development branch, relying on the branch name to indicate future developments. This way the development will pick up the master versioned tag from the initial fork or most recent merge. In this case the master tagged version will never be less than the development one.
-- branch merge from master. Here the branch will get the latest version from either the branch or master. This is typically a last step to test the development branch before merging back to the master. Even if the branch version is updated it will be safe for remerging, so it is unlikely to be a problem.
+- branch merge into master/main. Here the commit will get the latest versioned tag from either the branch or master/main
+  - If master/main is ahead of the development branch this would be correct behaviour. Explicit tag can force a new version if necessary
+  - if master/main is behind the branch, then in most cases this will be valid, the exception is where a fix is done on a future development and there is a need to back port to the current master/main. For me this is not an issue as the scenario is unlikely to happen.
+    It can also be managed by not creating a tag on a development branch, relying on the branch name to indicate future developments. This way the development will pick up the master/main versioned tag from the initial fork or most recent merge. In this case the master/main tagged version will never be less than the development one.
+- branch merge from master/main. Here the branch will get the latest version from either the branch or master/main. This is typically a last step to test the development branch before merging back to the master/main. Even if the branch version is updated it will be safe for remerging, so it is unlikely to be a problem.
 
 ### fileVer.cmd
 
@@ -181,7 +181,7 @@ Where
 filename	file as specified on the command line
 nn			The number of commits the file has been involved in
 +			added if the file is not yet committed
-{branch}	shown if not on master branch
+{branch}	shown if not on master/main branch
 hashval		git SHA1
 date		date the file wsa last committed in YYYY-MM-DD format and is in GMT
 ```
@@ -189,6 +189,6 @@ date		date the file wsa last committed in YYYY-MM-DD format and is in GMT
 ------
 
 ```
-Updated by Mark Ogden 19-Sep-2020
+Updated by Mark Ogden 12-Oct-2020
 ```
 

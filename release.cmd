@@ -11,7 +11,7 @@ goto START
 :USAGE
 ::--------
 echo Usage: release -v | [major]
-echo Requires confirmation if outstanding commits or on master branch
+echo Requires confirmation if outstanding commits or on master/main branch
 goto :EOF
 
 
@@ -38,7 +38,7 @@ for /f "tokens=1,2 delims=. " %%A in ('"git status -s -b -uno -- . 2>NUL"') do (
 :gotQualifier
 if [%BRANCH%] == [HEAD] echo Cannot continue. Fix headless state before retrying & goto :eof
 if defined DIRTY call :askYN YN "Outstanding Commits. Continue anyway y/N" & if [!YN!] neq [y] goto :eof
-if [%BRANCH%] neq [master] call :askYN YN "Not on master branch. Continue anyway y/N" & if [!YN!] neq [y] goto :eof
+if [%BRANCH%] neq [master] if [%BRANCH%] neq [main] call :askYN YN "Not on master/main branch. Continue anyway y/N" & if [!YN!] neq [y] goto :eof
 
 
 if [%APPID%] neq [] set strPREFIX=%APPID%-
@@ -73,7 +73,7 @@ for /f "tokens=1 delims=."  %%A in ('"git tag -l %strPREFIX%[0-9]*.*[0-9] --sort
 :gotVersion
 
 set GIT_VERSION=%newVERSION%.0.X
-if [%BRANCH%] neq [master] set GIT_VERSION=%GIT_VERSION%-%BRANCH%
+if [%BRANCH%] neq [master] if [%BRANCH%] neq [main] set GIT_VERSION=%GIT_VERSION%-%BRANCH%
 
 call :gmtNow NOW
 

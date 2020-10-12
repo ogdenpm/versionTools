@@ -108,7 +108,7 @@ sub getVersionString {
         while (<$in>) {
             if (/^## (\w+)/) {
                 $GIT_BRANCH = $1;
-                $GIT_BUILDTYPE = 1 if $GIT_BRANCH ne 'master';
+                $GIT_BUILDTYPE = 1 if $GIT_BRANCH ne 'master' && $GIT_BRANCH ne 'main';
             } elsif (substr($_, 0, 2) ne "  ") {
                 $GIT_QUALIFIER = ".P";
                 $GIT_BUILDTYPE = 2;
@@ -118,7 +118,7 @@ sub getVersionString {
         close $in;
     }
     return unless defined $GIT_BRANCH;
-    $GIT_QUALIFIER .= "-$GIT_BRANCH" if $GIT_BRANCH ne "master";
+    $GIT_QUALIFIER .= "-$GIT_BRANCH" if $GIT_BRANCH ne "master" && $GIT_BRANCH ne 'main';
     # get the current SHA1 and commit time for the items in the directory
     open my $in, 'git log -1 --format="%h %ct" -- . |' or die $!;
     ($GIT_SHA1, $UNIX_CTIME) = (<$in> =~ /(\S+)\s+(\S+)/);

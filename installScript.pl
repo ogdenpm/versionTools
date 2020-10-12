@@ -25,7 +25,7 @@ sub getRevision {
         }
         close $in;
     }
-    $qualifier .= " {$branch}" unless $branch eq 'master';
+    $qualifier .= " {$branch}" unless $branch eq 'master' || $branch eq 'main';
 
     # get the relevant SHA1 and commit time
     open $in, "git log -a --format=\"%h %ct\" -- :(icase)$file |" or die $!;

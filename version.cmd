@@ -12,10 +12,10 @@ REM  GIT_VERSION: Major.Minor.Commits [qualifier]       where Major and Minor co
 REM                                                     where qualifier is [.P | .X] [-branch] 
 REM                                                       .P - using uncommited files
 REM                                                       .X - externally tracked i.e. no git
-REM                                                       -branch is present if branch is not master
+REM                                                       -branch is present if branch is not master or main
 REM  GIT_BUILDTYPE n                                    where n is
-REM                                                     0 for normal build on master branch
-REM                                                     1 for normal build not on master branch
+REM                                                     0 for normal build on master/main branch
+REM                                                     1 for normal build not on master/main branch
 REM                                                     2 for build using uncommited files
 REM                                                     3 for build using untracked files 
 REM  Note a windows resource version is also generated as Major,Minor,Commits,buildtype
@@ -160,7 +160,7 @@ set GIT_BUILDTYPE=0
 for /f "tokens=1,2 delims=. " %%A in ('"git status -s -b -uno -- . 2>NUL"') do (
     if [%%A] == [##] (
         set GIT_BRANCH=%%B
-        if [%%B] neq [master] set GIT_BUILDTYPE=1
+        if [%%B] neq [master] if [%%B] neq [main] set GIT_BUILDTYPE=1
     ) else (
         if [%%A%%B] neq [] (
             set GIT_QUALIFIER=.P
@@ -173,7 +173,7 @@ for /f "tokens=1,2 delims=. " %%A in ('"git status -s -b -uno -- . 2>NUL"') do (
 :: error then no git or not in a repo (ERRORLEVEL not reliable)
 IF not defined GIT_BRANCH goto :EOF
 
-if [%GIT_BRANCH%] neq [master] set GIT_QUALIFIER=%GIT_QUALIFIER%-%GIT_BRANCH%
+if [%GIT_BRANCH%] neq [master] if [%GIT_BRANCH%] neq [main] set GIT_QUALIFIER=%GIT_QUALIFIER%-%GIT_BRANCH%
 ::
 :: get the current SHA1 and commit time for items in this directory
 for /f "tokens=1,2" %%A in ('git log -1 "--format=%%h %%ct" -- .') do (

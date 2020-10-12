@@ -36,7 +36,7 @@ set FILE=%~nx1
 call :pad FILE 20
 set REVISION=%GIT_COMMITS%%GIT_QUALIFIER%
 
-if [%GIT_BRANCH%] neq [master] set REVISION=%REVISION% {%GIT_BRANCH%}
+if [%GIT_BRANCH%] neq [master] if [%GIT_BRAHCN%] neq [main] set REVISION=%REVISION% {%GIT_BRANCH%}
 call :pad "REVISION" 3
 
 echo %FILE% Rev: %REVISION% -- git %GIT_SHA1% [%GIT_CTIME:~0,10%]
