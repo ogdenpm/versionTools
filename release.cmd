@@ -131,7 +131,7 @@ if defined wantMAJOR (
 ) else if defined wantMINOR (
     set newMsg=Minor release %newVersion% tag %newTAG%
 ) else (
-    set newMsg=Tweak %newVersion%
+    set newMsg=Tweak %newVersion% tag %newTAG%
 )
 :: clear any error
 verify >NUL
