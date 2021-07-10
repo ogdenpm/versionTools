@@ -102,7 +102,7 @@ for /f %%C in ('git ls-files HEAD -- "%SCOPE%" ^| find /v "" /c') do set COUNT=%
 if [%COUNT%] == [1] goto :gotScope
 
 :forceScope
-set SCOPE=:(icase)%FILE%
+set SCOPE=:(icase)*%FILE%
 :gotscope
 ::
 
