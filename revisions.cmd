@@ -10,7 +10,7 @@ SHIFT /1
 goto doOpt
 
 :usage
-echo usage: %0 [-v] ^| [-r] [-q]
+echo usage: %0 [-v] ^| [-s] [-q]
 echo where -v shows version info
 echo       -s also shows files in immediate sub-directories
 echo       -q supresses no Git info for file message

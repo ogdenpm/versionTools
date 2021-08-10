@@ -126,6 +126,7 @@ The following are the key steps in deriving the version information
     | -------------- | ------------- | ------------------------------------------------------------ |
     | GIT_APPID      | String        | GIT_APPID from step 1. Note omitted if GIT_APPID is blank also not used in C# generated file |
     | GIT_APPNAME    | String        | The application name - note preferred replacement for GIT_APPDIR. Taken from version.in or defaults to parent directory |
+    | GIT_PORT       | String        | Optional. Used to record version and copyright for ported code e.g. "2.2 (C) Whitesmiths" |
     | GIT_VERSION    | String        | GIT_VERSION from step 9 or from version.in if no Git support |
     | GIT_VERSION_RC | CSV or String | strTAG,GIT_COMMITS,GIT_BUILDTYPE with dot in strTAG replaced with a comma. Value from version.in used if no Git support.  For C# commas are replaced by dot and the value is a String rather than CSV. |
     | GIT_SHA1       | String        | GIT_SHA1 value from step 5, or set to "untracked" if no Git support |
@@ -155,13 +156,15 @@ The method calculating the latest applicable tag may not work for everyone. Taki
     It can also be managed by not creating a tag on a development branch, relying on the branch name to indicate future developments. This way the development will pick up the master/main versioned tag from the initial fork or most recent merge. In this case the master/main tagged version will never be less than the development one.
 - branch merge from master/main. Here the branch will get the latest version from either the branch or master/main. This is typically a last step to test the development branch before merging back to the master/main. Even if the branch version is updated it will be safe for remerging, so it is unlikely to be a problem.
 
-### fileVer.cmd
+### fileVer.cmd, revisions.cmd, revisions.pl
 
-This is a stripped down version of version.cmd, that identifies the file revision of a specific file. It does not rely on any appid tag but calculates the revisions since the file was first committed. It does not account for moves or renames, other than simple letter case change.
+filever.cmd is a stripped down version of version.cmd, that identifies the file revision of a specific file. It does not rely on any appid tag but calculates the revisions since the file was first committed. It does not account for moves or renames, other than simple letter case change.
 
-Its primary use is for simple script files that don't have a build stage where the version information could be readily imported
+revisions.cmd will run fileVer on all files in the current directory and revisions.pl is a perl script that combines the functionality of fileVer.cmd and revisions.cmd
 
-Note this now attempts to handle cases where a file has been moved. The following scenarios are handled
+The primary use of these utilities is for script files that don't have a build stage where the version information could be readily imported
+
+Note the utilities attempt to handle cases where a file has been moved. The following scenarios are handled
 
 1. Filename is unique in the repository, all changes to filename are counted. Handles file moves
 2. Directory/Filename is unique, counts all changes to the directory/filename combination. Handles directory moves.
@@ -171,7 +174,17 @@ For all of the above the filename compare is done in a case insensitive way.
 
 There are cases where the above approach will be wrong, particularly if the filename has been reused after one with the same name has been previously deleted. In most cases the approach is expected to provide the correct result.
 
-**usage:** fileVer file
+**usage:** fileVer -v | [-q] file
+**usage**: revisions -v | [-s] [-q]
+**usage**: revisions.pl -v | [-q] [file | dir]*
+
+```
+where
+-v	shows utility version
+-q	suppresses warning about file not in a Git repository
+-s	process files in immediate subdirectoies as well
+for revisions.pl, if no file or directory is specified it processes the current directory
+```
 
 Output shown on the console
 
@@ -189,6 +202,6 @@ date		date the file wsa last committed in YYYY-MM-DD format and is in GMT
 ------
 
 ```
-Updated by Mark Ogden 12-Oct-2020
+Updated by Mark Ogden 10-Aug-2021
 ```
 

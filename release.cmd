@@ -112,6 +112,7 @@ if defined writeDEFAULT (
     echo #ifndef v%newVERSION:.=_%_3>>"%DEFAULTS_FILE%"
     echo #define v%newVERSION:.=_%_3>>"%DEFAULTS_FILE%"
     if [%APPID%] neq [] echo #define GIT_APPID       "%APPID%">>"%DEFAULTS_FILE%"
+    if defined GIT_PORT echo #define GIT_PORT        "%GIT_PORT%">>"%DEFAULTS_FILE%"
     echo #define GIT_APPNAME     "%APPNAME%">>"%DEFAULTS_FILE%"
     echo #define GIT_VERSION     "%GIT_VERSION%">>"%DEFAULTS_FILE%"
     echo #define GIT_VERSION_RC  %newVERSION:.=,%,3 >>"%DEFAULTS_FILE%"
@@ -148,6 +149,7 @@ if exist %DEFAULTS_FILE% (
         if [%%B] == [GIT_APPID] set APPID=%%~C
         if [%%B] == [GIT_APPDIR] set hasAPPDIR
         if [%%B] == [GIT_APPNAME] set APPNAME=%%~C
+        if [%%B] == [GIT_PORT] set GIT_PORT=%%~C
     )
     goto :forceName
 ) 

@@ -173,6 +173,7 @@ sub writeOut {
             $guard =~ s/,/_/g;
             print $out "#ifndef $guard\n#define $guard\n";
             print $out "#define GIT_APPID       \"$GIT_APPID\"\n" if $GIT_APPID ne ""; 
+            print $out "#define GIT_PORT        \"$GIT_PORT\"\n" if defined($GIT_PORT);
             print $out "#define GIT_APPNAME     \"$GIT_APPNAME\"\n";  
             print $out "#define GIT_VERSION     \"$GIT_VERSION\"\n";  
             print $out "#define GIT_VERSION_RC  $GIT_VERSION_RC\n";
@@ -186,6 +187,7 @@ sub writeOut {
             $GIT_VERSION_RC =~ s/,/./g;
             print $out "namespace GitVersionInfo {\n";
             print $out "  public partial class GitVersionInfo {\n";
+            print $out "    public const string GIT_PORT       = \"$GIT_PORT\";\n" if defined($GIT_PORT);
             print $out "    public const string GIT_APPNAME    = \"$GIT_APPNAME\";\n";
             print $out "    public const string GIT_VERSION    = \"$GIT_VERSION\";\n";
             print $out "    public const string GIT_VERSION_RC = \"$GIT_VERSION_RC\";\n";
@@ -201,6 +203,7 @@ sub writeOut {
     }
     if (!defined($fQUIET)) {
         print "Git App Id:           $GIT_APPID\n";
+        print "Git Port              $defaults{GIT_PORT}\n" if defined($defaults{GIT_PORT});
         print "Git Version:          $GIT_VERSION\n";
         print "Build type:           $GIT_BUILDTYPE\n";
         print "SHA1:                 $GIT_SHA1\n";
@@ -232,6 +235,7 @@ if (!getOpts()) {
         $GIT_BUILDTYPE = 3;
         $GIT_BRANCH = $defaults{GIT_BRANCH};
         $GIT_CTIME = $defaults{GIT_CTIME};
+        $GIT_PORT = $default{GIT_PORT} if defined($defaults{GIT_PORT});
    } 
     writeOut if $CACHE_FILE eq "" || !checkCache();
 }

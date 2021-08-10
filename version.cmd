@@ -23,6 +23,7 @@ REM  The tag used is chosen as highest parent version tag applicable to the curr
 REM  ** For some scenarios this may not always be the desired outcome, but for my usage it is fine **
 REM  Commits is the count of commit applicable to this directory since the tag or when git was first used if no tag
 REM  GIT_APPID:   Application name from file %DEFAULTS_FILE%  - omitted if no prefix
+REM  GIT_PORT:    Optional, used to show version and copyright of ported software. e.g. 2.2 (C) Whitesmiths
 REM  GIT_SHA1:    SHA1 value of current commit or 'untracked' if outside git
 REM  GIT_CTIME:   DATE & TIME of current commit (in UTC)
 REM  GIT_CYEAR:   Year of current commit (useful for Copyright)
@@ -122,6 +123,7 @@ if [%GIT_SHA1%] == [] (
         set GIT_BUILDTYPE=3
         set GIT_BRANCH=%defGIT_BRANCH%
         set GIT_CTIME=%defGIT_CTIME%
+        if defined defGIT_PORT set GIT_PORT=%defGIT_PORT%
     )
 )
 if DEFINED CACHE_FILE CALL :CHECK_CACHE
@@ -238,6 +240,7 @@ IF DEFINED STDHDR (
 ECHO #ifndef %GUARD%>>"%HEADER_OUT_FILE%"
 ECHO #define %GUARD%>>"%HEADER_OUT_FILE%"
 if [%GIT_APPID%] neq [] ECHO #define GIT_APPID       "%GIT_APPID%">>"%HEADER_OUT_FILE%"
+if defined GIT_PORT     ECHO #define GIT_PORT        "%GIT_PORT%">>"%HEADER_OUT_FILE%"
 ECHO #define GIT_APPNAME     "%GIT_APPNAME%">>"%HEADER_OUT_FILE%"
 ECHO #define GIT_VERSION     "%GIT_VERSION%">>"%HEADER_OUT_FILE%"
 ECHO #define GIT_VERSION_RC  %GIT_VERSION_RC% >>"%HEADER_OUT_FILE%"
@@ -250,6 +253,7 @@ ECHO #endif>>"%HEADER_OUT_FILE%"
 ) ELSE (
 ECHO namespace GitVersionInfo {>>"%HEADER_OUT_FILE%"
 ECHO   public partial class VersionInfo {>>"%HEADER_OUT_FILE%"
+if defined GIT_PORT ECHO     public const string GIT_PORT    = "%GIT_PORT%";>>"%HEADER_OUT_FILE%"
 ECHO     public const string GIT_APPNAME    = "%GIT_APPNAME%";>>"%HEADER_OUT_FILE%"
 ECHO     public const string GIT_VERSION    = "%GIT_VERSION%";>>"%HEADER_OUT_FILE%"
 ECHO     public const string GIT_VERSION_RC = "%GIT_VERSION_RC:,=.%";>>"%HEADER_OUT_FILE%"
