@@ -101,7 +101,7 @@ sub unix2GMT {
 
 }
 
-sub getVersionString {
+sub getVersionId {
     $GIT_BUILDTYPE = 0;
 # check for banch and any outstanding commits in current tree
     if (open my $in, "git status -s -b -uno -- . |") {
@@ -123,6 +123,9 @@ sub getVersionString {
     open my $in, 'git log -1 --format="%h %ct" -- . |' or die $!;
     ($GIT_SHA1, $UNIX_CTIME) = (<$in> =~ /(\S+)\s+(\S+)/);
     close $in;
+}
+
+sub getVersionString {
     $GIT_CTIME = unix2GMT($UNIX_CTIME);
 
     $prefix = "$GIT_APPID-" if $GIT_APPID ne "";
@@ -152,8 +155,12 @@ sub checkCache {
         my $oldVer = <$in>;
         close $in;
         chomp $oldVer;
-        if ($oldVer eq "$GIT_APPID-$GIT_VERSION-$GIT_SHA1") {
-            print "Build version is assumed unchanged from $GIT_VERSION\n" unless $fQuiet;
+        if ($oldVer eq "$GIT_SHA1$GIT_QUALIFIER") {
+            if (!$fQuiet) {
+                print "Build version is assumed unchanged";
+                print " - WARNING uncommitted files" if $GIT_BUILDTYPE == 2;
+                print "\n";
+            }
             return 1;
         }
     }
@@ -202,8 +209,9 @@ sub writeOut {
 
     }
     if (!defined($fQUIET)) {
-        print "Git App Id:           $GIT_APPID\n";
-        print "Git Port              $defaults{GIT_PORT}\n" if defined($defaults{GIT_PORT});
+        print "Git App Id:           $GIT_APPID";
+        print " $defaults{GIT_PORT}" if defined($defaults{GIT_PORT});
+        print "\n";
         print "Git Version:          $GIT_VERSION\n";
         print "Build type:           $GIT_BUILDTYPE\n";
         print "SHA1:                 $GIT_SHA1\n";
@@ -222,7 +230,7 @@ if (!getOpts()) {
     usage();
 } else {
     loadDefaults();
-    getVersionString();
+    getVersionId();
     if ($GIT_SHA1 eq "") {
         if ($defaults{GIT_SHA1} eq "") {
             print "No Git information and no $DEFAULTS_FILE file\n";
@@ -237,6 +245,10 @@ if (!getOpts()) {
         $GIT_CTIME = $defaults{GIT_CTIME};
         $GIT_PORT = $default{GIT_PORT} if defined($defaults{GIT_PORT});
    } 
-    writeOut if $CACHE_FILE eq "" || !checkCache();
+   if ($CACHE_FILE eq "" || !checkCache()) {
+       getVersionString();
+       writeOut();
+   }
+   exit(0);
 }
 
