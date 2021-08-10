@@ -108,26 +108,14 @@ REM Entry Point
 REM ===================
 :START
 CALL :LOAD_DEFAULTS
-CALL :GET_VERSION_STRING
+CALL :GET_VERSION_ID
 if [%GIT_SHA1%] == [] (
-    if [%defGIT_SHA1%] == [] (
-        echo No Git information and no "%DEFAULTS_FILE%" file
+        echo No Git information
         exit /b 1
-    ) else (
-        if defined STDHDR (
-            echo copying %DEFAULTS_FILE% to %HEADER_OUT_FILE%
-            copy /y/b "%DEFAULTS_FILE%" "%HEADER_OUT_FILE%" & exit /b 0
-        )
-        set GIT_SHA1=untracked
-        set GIT_VERSION=%defGIT_VERSION%
-        set GIT_BUILDTYPE=3
-        set GIT_BRANCH=%defGIT_BRANCH%
-        set GIT_CTIME=%defGIT_CTIME%
-        if defined defGIT_PORT set GIT_PORT=%defGIT_PORT%
-    )
 )
 if DEFINED CACHE_FILE CALL :CHECK_CACHE
 if DEFINED fDONE exit /b 0
+call :GET_VERSION_STRING
 call :WRITE_OUT
 exit /b 0
 
@@ -155,7 +143,7 @@ if [%GIT_APPID%] == [.] set GIT_APPID=%GIT_APPDIR%
 GOTO :EOF
 
 :: --------------------
-:GET_VERSION_STRING
+:GET_VERSION_ID
 :: --------------------
 set GIT_BUILDTYPE=0
 :: Get which branch we are on and whether any outstanding commits in current tree
@@ -175,13 +163,16 @@ for /f "tokens=1,2 delims=. " %%A in ('"git status -s -b -uno -- . 2>NUL"') do (
 :: error then no git or not in a repo (ERRORLEVEL not reliable)
 IF not defined GIT_BRANCH goto :EOF
 
-if [%GIT_BRANCH%] neq [master] if [%GIT_BRANCH%] neq [main] set GIT_QUALIFIER=%GIT_QUALIFIER%-%GIT_BRANCH%
 ::
 :: get the current SHA1 and commit time for items in this directory
 for /f "tokens=1,2" %%A in ('git log -1 "--format=%%h %%ct" -- .') do (
     set GIT_SHA1=%%A
     set UNIX_CTIME=%%B
 )
+if [%GIT_BRANCH%] neq [master] if [%GIT_BRANCH%] neq [main] set GIT_QUALIFIER=%GIT_QUALIFIER%-%GIT_BRANCH%
+goto :EOF
+
+:GET_VERSION_STRING
 call :gmTime GIT_CTIME UNIX_CTIME
 
 if defined GIT_APPID set strPREFIX=%GIT_APPID%-
@@ -216,9 +207,13 @@ IF EXIST "%HEADER_OUT_FILE%" (
     IF EXIST "%CACHE_FILE%" (
       if [%fFORCE%] == [1] goto :overwrite
       FOR /F "tokens=* usebackq" %%A IN ("%CACHE_FILE%") DO (
-        IF "%%A" == "%GIT_APPID%-%GIT_VERSION%-%GIT_SHA1%" (
+        IF "%%A" == "%GIT_SHA1%%GIT_QUALIFIER%" (
           IF NOT DEFINED fQUIET (
-            ECHO Build version is assumed unchanged from: %GIT_VERSION%
+              if %GIT_BUILDTYPE% == 2 (
+                  ECHO Build version is assumed unchanged - WARNING uncommited files
+              ) else (
+                  ECHO Build version is assumed unchanged
+              )
           )
           SET fDONE=1
         )
@@ -226,7 +221,7 @@ IF EXIST "%HEADER_OUT_FILE%" (
     )
 )
 :overwrite
-ECHO %GIT_APPID%-%GIT_VERSION%-%GIT_SHA1%> "%CACHE_FILE%"
+ECHO %GIT_SHA1%%GIT_QUALIFIER%> "%CACHE_FILE%"
 
 GOTO :EOF
 
@@ -240,21 +235,23 @@ IF DEFINED STDHDR (
 ECHO #ifndef %GUARD%>>"%HEADER_OUT_FILE%"
 ECHO #define %GUARD%>>"%HEADER_OUT_FILE%"
 if [%GIT_APPID%] neq [] ECHO #define GIT_APPID       "%GIT_APPID%">>"%HEADER_OUT_FILE%"
-if defined GIT_PORT     ECHO #define GIT_PORT        "%GIT_PORT%">>"%HEADER_OUT_FILE%"
+if [%GIT_PORTVER%] neq [] ECHO #define GIT_PORTVER     "%PORTVER%">>"%HEADER_OUT_FILE%"
+
 ECHO #define GIT_APPNAME     "%GIT_APPNAME%">>"%HEADER_OUT_FILE%"
+if defined defGIT_PORT      ECHO #define GIT_PORT        "%defGIT_PORT%">>"%HEADER_OUT_FILE%"
 ECHO #define GIT_VERSION     "%GIT_VERSION%">>"%HEADER_OUT_FILE%"
 ECHO #define GIT_VERSION_RC  %GIT_VERSION_RC% >>"%HEADER_OUT_FILE%"
 ECHO #define GIT_SHA1        "%GIT_SHA1%">>"%HEADER_OUT_FILE%"
 echo #define GIT_BUILDTYPE   %GIT_BUILDTYPE% >>"%HEADER_OUT_FILE%"
-if [%defGIT_APPDIR%] neq [] ECHO #define GIT_APPDIR      "%GIT_APPNAME%">>"%HEADER_OUT_FILE%"
+if [%defGIT_APPDIR%] neq [] ECHO #define GIT_APPDIR      "%GIT_APPDIR%">>"%HEADER_OUT_FILE%"
 ECHO #define GIT_CTIME       "%GIT_CTIME%">>"%HEADER_OUT_FILE%"
 ECHO #define GIT_YEAR        "%GIT_CTIME:~,4%">>"%HEADER_OUT_FILE%"
 ECHO #endif>>"%HEADER_OUT_FILE%"
 ) ELSE (
 ECHO namespace GitVersionInfo {>>"%HEADER_OUT_FILE%"
 ECHO   public partial class VersionInfo {>>"%HEADER_OUT_FILE%"
-if defined GIT_PORT ECHO     public const string GIT_PORT    = "%GIT_PORT%";>>"%HEADER_OUT_FILE%"
 ECHO     public const string GIT_APPNAME    = "%GIT_APPNAME%";>>"%HEADER_OUT_FILE%"
+if defined defGIT_PORT ECHO     public const string GIT_PORT    = "%defGIT_PORT%";>>"%HEADER_OUT_FILE%"
 ECHO     public const string GIT_VERSION    = "%GIT_VERSION%";>>"%HEADER_OUT_FILE%"
 ECHO     public const string GIT_VERSION_RC = "%GIT_VERSION_RC:,=.%";>>"%HEADER_OUT_FILE%"
 ECHO     public const string GIT_SHA1       = "%GIT_SHA1%";>>"%HEADER_OUT_FILE%"
@@ -268,7 +265,7 @@ ECHO }>>"%HEADER_OUT_FILE%"
 :CON_OUT
 :: --------------------
 IF DEFINED fQUIET GOTO :EOF
-ECHO Git App Id:           %GIT_APPID%
+ECHO Git App Id:           %GIT_APPID% %defGIT_PORT%
 ECHO Git Version:          %GIT_VERSION%
 ECHO Build type:           %GIT_BUILDTYPE%
 ECHO SHA1:                 %GIT_SHA1%

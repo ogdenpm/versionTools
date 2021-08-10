@@ -13,9 +13,9 @@
 
 // and whether it is a debug build
 #ifdef _DEBUG
-#define BUILD   "{ " ARCHSIZE " debug }"
+#define BUILD   "{" ARCHSIZE " debug}"
 #else
-#define BUILD   "{ " ARCHSIZE " }"
+#define BUILD   "{" ARCHSIZE "}"
 #endif
 
 // convert the GIT_BUILDTYPE into a string
@@ -34,12 +34,12 @@
 // "x.y (C) company"
 // e.g. "2.2 (C) Whitesmiths"
 #ifdef GIT_PORT
-static const char *git_ver = GIT_APPNAME " [ " GIT_PORT " ] - " BUILD " " GIT_VERSION " port (C)" GIT_YEAR " Mark Ogden";
+static const char *git_ver = GIT_APPNAME " " GIT_PORT " - " GIT_VERSION " " BUILD " port (C)" GIT_YEAR " Mark Ogden";
 #else
-static const char *git_ver = GIT_APPNAME " - " BUILD " " GIT_VERSION " (C)" GIT_YEAR " Mark Ogden";
+static const char *git_ver = GIT_APPNAME " - " GIT_VERSION " " BUILD " (C)" GIT_YEAR " Mark Ogden";
 #endif
 
-const char *git_detail = GIT_APPNAME " " GIT_VERSION "  " GIT_SHA1 "  [" GIT_CTIME "]" DIRTY;
+const char *git_detail = GIT_APPNAME " " GIT_VERSION " " GIT_SHA1 "  [" GIT_CTIME "]" DIRTY;
 
 
 // show version information
@@ -48,6 +48,7 @@ const char *git_detail = GIT_APPNAME " " GIT_VERSION "  " GIT_SHA1 "  [" GIT_CTI
 #include <stdbool.h>
 
 // optional library includes
+
 
 const char **git_details[] = {
     &git_detail,
@@ -69,5 +70,6 @@ void showVersion(FILE *fp, bool full) {
         }
     }
 }
+
 
 
