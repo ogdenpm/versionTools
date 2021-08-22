@@ -108,7 +108,7 @@ if defined wantMAJOR (
 
 :gotVersion
 set newVERSION=%MAJOR%.%MINOR%.%TWEAK%
-set GIT_VERSION=%newVERSION%.X
+set GIT_VERSION=%newVERSION%x
 
 if [%BRANCH%] neq [master] if [%BRANCH%] neq [main] set GIT_VERSION=%GIT_VERSION%-%BRANCH%
 

@@ -14,7 +14,7 @@ Major.Minor.CommitCount[qualifier]\[-branch]
 | ----------- | ------------------------------------------------------------ |
 | Major.Minor | This comes from a Git tag. See below for additional information |
 | CommitCount | This is the number of git commits for the current application since the Git tag.<br />**Warning:** Comparing versions across branches is not reliable because the commit count reflects commits relevant to the current branch. Merging will account for the additional commits from the branch.<br />**version.cmd** has a commented out code option to make CommitCount take into account commits on all branches. Although fine for local use, when using a remote repository, unless all branches are shared, this will give different results |
-| qualifier   | Is only present in two cases<br />+ - if the version contains pre-committed files<br />X - this is used when git is not available i.e. untracked files<br />Note this changed from .P and .X on 22-Aug-2021 |
+| qualifier   | Is only present in two cases<br />+ - if the version contains pre-committed files<br />x - this is used when git is not available i.e. untracked files<br />Note this changed from .P and .X on 22-Aug-2021 |
 | branch      | This is present if the version is not on the master/main branch.<br />Note headless versions have the branch name HEAD |
 
 | Example    | Meaning                                                      |
@@ -23,8 +23,8 @@ Major.Minor.CommitCount[qualifier]\[-branch]
 | 1.2.4      | Built using source which is 4 commits after 1.2.0 on the master/main branch |
 | 1.2.4+     | Build using same base sources as 1.2.4 but has some modified / additional files, not yet committed to Git - on the master/main branch |
 | 1.2.5-dev  | Built using source which is 5 commits after 1.2.0 on the dev branch |
-| 1.2.5X-dev | Same as 1.2.5-dev above but has some modified / additional files, not yet uncommitted to Git - on the dev branch |
-| 1.2.0X     | Built with files outside Git management, originally based on 1.2.0 sources |
+| 1.2.5x-dev | Same as 1.2.5-dev above but has some modified / additional files, not yet uncommitted to Git - on the dev branch |
+| 1.2.0x     | Built with files outside Git management, originally based on 1.2.0 sources |
 
 Note within windows resource files the file version is only displayed for numeric values. In this case the qualifier and branch are collapsed into a single digit.
 
