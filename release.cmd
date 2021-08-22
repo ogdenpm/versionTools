@@ -123,7 +123,7 @@ if defined writeDEFAULT (
     if defined GIT_PORT echo #define GIT_PORT        "%GIT_PORT%">>"%DEFAULTS_FILE%"
     echo #define GIT_APPNAME     "%APPNAME%">>"%DEFAULTS_FILE%"
     echo #define GIT_VERSION     "%GIT_VERSION%">>"%DEFAULTS_FILE%"
-    echo #define GIT_VERSION_RC  0,0,0,0>>"%DEFAULTS_FILE%"
+    echo #define GIT_VERSION_RC  0,0,0,0 >>"%DEFAULTS_FILE%"
     echo #define GIT_SHA1        "untracked">>"%DEFAULTS_FILE%"
     echo #define GIT_BUILDTYPE   2 >>"%DEFAULTS_FILE%"
     if defined hasAPPDIR echo #define GIT_APPDIR      "%APPDIR%">>"%DEFAULTS_FILE%"
