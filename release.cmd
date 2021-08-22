@@ -1,16 +1,22 @@
 @echo off
 setlocal ENABLEDELAYEDEXPANSION
 
-if [%~1] == [] goto START
-if /i [%~1] == [-v] (echo %0: Rev _REVISION_) & goto :EOF
-if /i [%~1] == [minor] (set wantMINOR=1) & goto START
-if /i [%~1] == [major] (set wantMAJOR=1) & goto START
+if "%~1" == "" goto START
+if /i "%~1" == "-v" (echo %0: Rev _REVISION_) & goto :EOF
+if /i "%~1" == "-h" goto :USAGE
+if /i "%~1" == "minor" (set wantMINOR=1) & SHIFT & goto chkmsg
+if /i "%~1" == "major" (set wantMAJOR=1) & SHIFT
+:chkmsg
+if /i "%~1" == "force" (set forceCOMMIT=1) & SHIFT
+if "%~1" == "" goto START
+if "%~2" == "" (set MESSAGE=%~1) & goto START
 
 ::--------
 :USAGE
 ::--------
-echo Usage: release -v ^| [major ^| minor]
-echo Requires confirmation if outstanding commits or not on master/main branch
+echo Usage: release -v ^| -h ^| [major ^| minor] [force] [message]
+echo force - skips confirmation if outstanding commits or not on master/main branch
+echo message - adds the user message to the commit message without using the editor
 goto :EOF
 
 
@@ -36,9 +42,11 @@ for /f "tokens=1,2 delims=. " %%A in ('"git status -s -b -uno -- . 2>NUL"') do (
 )
 :gotQualifier
 if [%BRANCH%] == [HEAD] echo Cannot continue. Fix headless state before retrying & goto :eof
+if defined forceCOMMIT goto doCOMMIT
 if defined DIRTY call :askYN YN "Outstanding Commits. Continue anyway y/N" & if [!YN!] neq [y] goto :eof
 if [%BRANCH%] neq [master] if [%BRANCH%] neq [main] call :askYN YN "Not on master/main branch. Continue anyway y/N" & if [!YN!] neq [y] goto :eof
 
+:doCOMMIT
 
 if [%APPID%] neq [] set strPREFIX=%APPID%-
 :: Use git tag to get the lastest tag applicable to the contents of this directory
@@ -136,7 +144,11 @@ if defined wantMAJOR (
 )
 :: clear any error
 verify >NUL
-git commit -m "%newMsg%" -e -- .
+if defined MESSAGE (
+    git commit -m "%newMsg% - %MESSAGE%" -- .
+) else (
+    git commit -m "%newMsg%" -e -- .
+)
 if ERRORLEVEL 1 (echo commit error) & goto :eof
 if [%wantMAJOR%%wantMINOR%] neq [] git tag -a -m "%newMsg%" %newTAG%
 if ERRORLEVEL 1 echo tag error
