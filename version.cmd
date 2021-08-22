@@ -9,15 +9,14 @@ REM  the following values are generated.  appid comes from the file %DEFAULTS_FI
 REM  it may be null
 REM
 REM  GIT_VERSION: Major.Minor.Commits [qualifier]       where Major and Minor come from a user tag of the format
-REM                                                     where qualifier is [.P | .X] [-branch] 
-REM                                                       .P - using uncommited files
-REM                                                       .X - externally tracked i.e. no git
+REM                                                     where qualifier is [+ | X] [-branch] 
+REM                                                       + - using uncommited files
+REM                                                       X - externally tracked i.e. no git
 REM                                                       -branch is present if branch is not master or main
 REM  GIT_BUILDTYPE n                                    where n is
-REM                                                     0 for normal build on master/main branch
-REM                                                     1 for normal build not on master/main branch
-REM                                                     2 for build using uncommited files
-REM                                                     3 for build using untracked files 
+REM                                                     0 for normal build
+REM                                                     1 for build using uncommited files
+REM                                                     2 for build using untracked files 
 REM  Note a windows resource version is also generated as Major,Minor,Commits,buildtype
 REM  The tag used is chosen as highest parent version tag applicable to the current directory
 REM  ** For some scenarios this may not always be the desired outcome, but for my usage it is fine **
@@ -43,7 +42,7 @@ set SCRIPTNAME=%0
 :: Console output only
 IF [%1] == [] GOTO START
 
-if /I [%~1] == [-v] (echo %0: Rev _REVISION_) & goto :eof
+if /I [%~1] == [-v] (echo %0: Rev 14 -- git f5cd62e [2021-08-10]) & goto :eof
 IF "%~1" == "-h" GOTO USAGE
 :optloop
 IF "%~1" == "-q" SET fQUIET=1& SHIFT & goto :optloop
@@ -130,7 +129,7 @@ REM ====================
 :: load the defaults from the %DEFAULTS_FILE% file
 :: line #define VAR VALUE gets a new variable defVAR with the VALUE (quotes are removed)
 if exist %DEFAULTS_FILE% (
-    for /f "tokens=1,2,3,4" %%A in (%DEFAULTS_FILE%) do if [%%A] == [#define] (call :setVar %%B %%C %%D)
+    for /f "tokens=1,2,*" %%A in (%DEFAULTS_FILE%) do if [%%A] == [#define] (call :setVar %%B %%C)
 )
 :: Application name defaults to parent directory
 for %%I in (%CD%) do set GIT_APPDIR=%%~nxI
@@ -150,11 +149,10 @@ set GIT_BUILDTYPE=0
 for /f "tokens=1,2 delims=. " %%A in ('"git status -s -b -uno -- . 2>NUL"') do (
     if [%%A] == [##] (
         set GIT_BRANCH=%%B
-        if [%%B] neq [master] if [%%B] neq [main] set GIT_BUILDTYPE=1
     ) else (
         if [%%A%%B] neq [] (
-            set GIT_QUALIFIER=.P
-            set GIT_BUILDTYPE=2
+            set GIT_QUALIFIER=+
+            set GIT_BUILDTYPE=1
             goto :gotQualifier
         )
     )
@@ -194,7 +192,10 @@ for /f "tokens=1" %%A in ('git rev-list --count %strFROM%HEAD -- .') do set GIT_
 
 :: remove any appid prefix or provide default
 if [%strTAG%] neq [] (set strTAG=%strTAG:*-=%) else (set strTAG=0.0)
-set GIT_VERSION_RC=%strTAG:.=,%,%GIT_COMMITS%,%GIT_BUILDTYPE%
+if [%GIT_BRANCH%] neq [master] if [%GIT_BRANCH%] neq [main] (
+    set GIT_VERSION_RC=0,0,0,0
+) else set GIT_VERSION_RC=%strTAG:.=,%,%GIT_COMMITS%,%GIT_BUILDTYPE%
+
 set GIT_VERSION=%strTAG%.%GIT_COMMITS%%GIT_QUALIFIER%
 goto :EOF
 
@@ -209,7 +210,7 @@ IF EXIST "%HEADER_OUT_FILE%" (
       FOR /F "tokens=* usebackq" %%A IN ("%CACHE_FILE%") DO (
         IF "%%A" == "%GIT_SHA1%%GIT_QUALIFIER%" (
           IF NOT DEFINED fQUIET (
-              if %GIT_BUILDTYPE% == 2 (
+              if %GIT_BUILDTYPE% == 1 (
                   ECHO Build version is assumed unchanged - WARNING uncommited files
               ) else (
                   ECHO Build version is assumed unchanged
@@ -274,10 +275,9 @@ ECHO Committed:            %GIT_CTIME%
 GOTO :EOF
 
 
-:setVar var valpart1 valpar2
+:setVar var valpart1
     set _var=%1
     set _value=%~2
-    if [%3] neq [] set _value=%2 %3
     set _value=%_value:" =%
     set def!_var!=!_value:"=!
 goto :eof

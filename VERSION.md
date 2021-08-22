@@ -8,34 +8,32 @@ Whilst each has its merits, most are more complex that I required, so I have cre
 
 The label has the form
 
-Major.Minor.CommitCount \[.qualifier]\[-branch]
+Major.Minor.CommitCount[qualifier]\[-branch]
 
 | Component   | Notes                                                        |
 | ----------- | ------------------------------------------------------------ |
 | Major.Minor | This comes from a Git tag. See below for additional information |
 | CommitCount | This is the number of git commits for the current application since the Git tag.<br />**Warning:** Comparing versions across branches is not reliable because the commit count reflects commits relevant to the current branch. Merging will account for the additional commits from the branch.<br />**version.cmd** has a commented out code option to make CommitCount take into account commits on all branches. Although fine for local use, when using a remote repository, unless all branches are shared, this will give different results |
-| qualifier   | Is only present in two cases<br />.P - if the version contains pre-committed files<br />.X - this is used when git is not available i.e. untracked files |
+| qualifier   | Is only present in two cases<br />+ - if the version contains pre-committed files<br />X - this is used when git is not available i.e. untracked files<br />Note this changed from .P and .X on 22-Aug-2021 |
 | branch      | This is present if the version is not on the master/main branch.<br />Note headless versions have the branch name HEAD |
 
-| Example     | Meaning                                                      |
-| ----------- | ------------------------------------------------------------ |
-| 1.2.0       | Built using a tagged Git version 1.2 on the master/main branch |
-| 1.2.4       | Built using source which is 4 commits after 1.2.0 on the master/main branch |
-| 1.2.4.P     | Build using same base sources as 1.2.4 but has some modified / additional files, not yet committed to Git - on the master/main branch |
-| 1.2.5-dev   | Built using source which is 5 commits after 1.2.0 on the dev branch |
-| 1.2.5.X-dev | Same as 1.2.5-dev above but has some modified / additional files, not yet uncommitted to Git - on the dev branch |
-| 1.2.0.X     | Built with files outside Git management, originally based on 1.2.0 sources |
+| Example    | Meaning                                                      |
+| ---------- | ------------------------------------------------------------ |
+| 1.2.0      | Built using a tagged Git version 1.2 on the master/main branch |
+| 1.2.4      | Built using source which is 4 commits after 1.2.0 on the master/main branch |
+| 1.2.4+     | Build using same base sources as 1.2.4 but has some modified / additional files, not yet committed to Git - on the master/main branch |
+| 1.2.5-dev  | Built using source which is 5 commits after 1.2.0 on the dev branch |
+| 1.2.5X-dev | Same as 1.2.5-dev above but has some modified / additional files, not yet uncommitted to Git - on the dev branch |
+| 1.2.0X     | Built with files outside Git management, originally based on 1.2.0 sources |
 
 Note within windows resource files the file version is only displayed for numeric values. In this case the qualifier and branch are collapsed into a single digit.
 
 
 0 -> normal build on master/main branch
 
-1 -> normal build not on master /main branch
+1 -> build with uncommitted files
 
-2 -> build with uncommitted files
-
-3 -> build with untracked files
+2 -> build with untracked files
 
 ## Generating version from Git
 
@@ -128,7 +126,7 @@ The following are the key steps in deriving the version information
     | GIT_APPNAME    | String        | The application name - note preferred replacement for GIT_APPDIR. Taken from version.in or defaults to parent directory |
     | GIT_PORT       | String        | Optional. Used to record version and copyright for ported code e.g. "2.2 (C) Whitesmiths" |
     | GIT_VERSION    | String        | GIT_VERSION from step 9 or from version.in if no Git support |
-    | GIT_VERSION_RC | CSV or String | strTAG,GIT_COMMITS,GIT_BUILDTYPE with dot in strTAG replaced with a comma. Value from version.in used if no Git support.  For C# commas are replaced by dot and the value is a String rather than CSV. |
+    | GIT_VERSION_RC | CSV or String | strTAG,GIT_COMMITS,GIT_BUILDTYPE with dot in strTAG replaced with a comma. Value from version.in used if no Git support.  For C# commas are replaced by dot and the value is a String rather than CSV.<br />Note from 22-Aug-2021 this has changed for untracked files or files not on the main branch and which now use 0,0,0,0. The GIT_VERSION string is still valid. |
     | GIT_SHA1       | String        | GIT_SHA1 value from step 5, or set to "untracked" if no Git support |
     | GIT_BUILDTYPE  | Number        | GIT_BUILDTYPE from step 2 or set to 3 if no Git support      |
     | GIT_APPDIR     | String        | **Depreciated**. The current application directory taken from version.in or defaulting to the immediate parent directory. |
@@ -202,6 +200,6 @@ date		date the file wsa last committed in YYYY-MM-DD format and is in GMT
 ------
 
 ```
-Updated by Mark Ogden 10-Aug-2021
+Updated by Mark Ogden 22-Aug-2021
 ```
 
