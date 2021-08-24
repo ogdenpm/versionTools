@@ -42,7 +42,7 @@ set SCRIPTNAME=%0
 :: Console output only
 IF [%1] == [] GOTO START
 
-if /I [%~1] == [-v] (echo %0: Rev 14 -- git f5cd62e [2021-08-10]) & goto :eof
+if /I [%~1] == [-v] (echo %~n0: Rev 14 -- git f5cd62e [2021-08-10]) & goto :eof
 IF "%~1" == "-h" GOTO USAGE
 :optloop
 IF "%~1" == "-q" SET fQUIET=1& SHIFT & goto :optloop
@@ -82,10 +82,11 @@ if not exist %HEADER_OUT_FILE%\ goto START
 :: --------------------
 :USAGE
 :: --------------------
-ECHO usage: %SCRIPTNAME% [-h] ^| [-q] [-f] [-a appid] [CACHE_PATH OUT_FILE]
+ECHO usage: %SCRIPTNAME% -v ^| -h ^| [-q] [-f] [-a appid] [CACHE_PATH OUT_FILE]
 ECHO.
 ECHO  When called without arguments version information writes to console
 ECHO.
+ECHO  -v          - displays script version information
 ECHO  -h          - displays this output
 ECHO.
 ECHO  -q          - Suppress console output
