@@ -193,9 +193,10 @@ for /f "tokens=1" %%A in ('git rev-list --count %strFROM%HEAD -- .') do set GIT_
 
 :: remove any appid prefix or provide default
 if [%strTAG%] neq [] (set strTAG=%strTAG:*-=%) else (set strTAG=0.0)
-if [%GIT_BRANCH%] neq [master] if [%GIT_BRANCH%] neq [main] (
-    set GIT_VERSION_RC=0,0,0,0
-) else set GIT_VERSION_RC=%strTAG:.=,%,%GIT_COMMITS%,%GIT_BUILDTYPE%
+
+set GIT_VERSION_RC=%strTAG:.=,%,%GIT_COMMITS%,%GIT_BUILDTYPE%
+
+if [%GIT_BRANCH%] neq [master] if [%GIT_BRANCH%] neq [main] set GIT_VERSION_RC=0,0,0,0
 
 set GIT_VERSION=%strTAG%.%GIT_COMMITS%%GIT_QUALIFIER%
 goto :EOF
