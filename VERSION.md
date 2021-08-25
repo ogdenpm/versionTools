@@ -29,11 +29,11 @@ Major.Minor.CommitCount[qualifier]\[-branch]
 Note within windows resource files the file version is only displayed for numeric values. In this case the qualifier and branch are collapsed into a single digit.
 
 
-0 -> normal build on master/main branch
+0 -> normal build
 
 1 -> build with uncommitted files
 
-2 -> build with untracked files
+untracked and branch builds have the file version set to 0.0.0.0.
 
 ## Generating version from Git
 
@@ -122,11 +122,11 @@ The following are the key steps in deriving the version information
 
     | Label          | Type          | Value                                                        |
     | -------------- | ------------- | ------------------------------------------------------------ |
-    | GIT_APPID      | String        | GIT_APPID from step 1. Note omitted if GIT_APPID is blank also not used in C# generated file |
+    | GIT_APPID      | String        | GIT_APPID from step 1. Note omitted if GIT_APPID is blank. Also not used in C# generated file |
     | GIT_APPNAME    | String        | The application name - note preferred replacement for GIT_APPDIR. Taken from version.in or defaults to parent directory |
     | GIT_PORT       | String        | Optional. Used to record version and copyright for ported code e.g. "2.2 (C) Whitesmiths" |
     | GIT_VERSION    | String        | GIT_VERSION from step 9 or from version.in if no Git support |
-    | GIT_VERSION_RC | CSV or String | strTAG,GIT_COMMITS,GIT_BUILDTYPE with dot in strTAG replaced with a comma. Value from version.in used if no Git support.  For C# commas are replaced by dot and the value is a String rather than CSV.<br />Note from 22-Aug-2021 this has changed for untracked files or files not on the main branch and which now use 0,0,0,0. The GIT_VERSION string is still valid. |
+    | GIT_VERSION_RC | CSV or String | strTAG,GIT_COMMITS,GIT_BUILDTYPE with dot in strTAG replaced with a comma. Value from version.in used if no Git support.  For C# commas are replaced by dot and the value is a String rather than CSV.<br />For untracked and branch builds this is set to 0,0,0,0 to avoid confusion. |
     | GIT_SHA1       | String        | GIT_SHA1 value from step 5, or set to "untracked" if no Git support |
     | GIT_BUILDTYPE  | Number        | GIT_BUILDTYPE from step 2 or set to 3 if no Git support      |
     | GIT_APPDIR     | String        | **Depreciated**. The current application directory taken from version.in or defaulting to the immediate parent directory. |
@@ -196,10 +196,31 @@ nn			The number of commits the file has been involved in
 hashval		git SHA1
 date		date the file wsa last committed in YYYY-MM-DD format and is in GMT
 ```
+### installScript.pl
+
+This script is primarily to deploy script files to target directories, e.g. for inclusion in github repsoitories. When doing so it replaces the string \_REVISION\_ in the script with text showing the actual revision of the script.
+
+**usage**: installScript.pl -v | [target file+]
+
+```
+where
+-v		shows the utility version
+target	is the directory where the files will be deployed
+file+	is a list of files to deploy
+Note the target directory and files must already exist
+
+If no command line arguments are present, then the utility will use a configuration file installScript.cfg. This file contains multiple lines of the form
+target file [ file]+
+where files are separated by whitespace and can continue on to multiple lines, with target being omitted and replaced by at least one whitespace character
+To allow for embedded space characters, target and file can optionally be enclosed in quotes.
+Blank lines and lines beginning # are ignored
+```
+
+
 
 ------
 
 ```
-Updated by Mark Ogden 22-Aug-2021
+Updated by Mark Ogden 25-Aug-2021
 ```
 
