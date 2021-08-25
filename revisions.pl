@@ -33,13 +33,19 @@ sub unix2GMT {
 
 }
 
-sub showRevision {
+sub getRevision {
     my $path = $_[0];
-    my $GIT_BRANCH;
     my $GIT_QUALIFIER = " ";
     my $fullpath = realpath($path);
     $fullpath =~ s/\\/\//g;         #convert to / usage for later tests;
     my ($volume, $directories,$file) = File::Spec->splitpath(($fullpath));
+
+
+    # check if this file is in the repository
+    open my $in, "git ls-files HEAD -- \"$file\" |";
+    my @match = <$in>;
+    close $in;
+    return "untracked" if @match == 0;
 
 # check for banch and any outstanding commits
     if ($cacheDir ne $directories) {
@@ -52,7 +58,7 @@ sub showRevision {
                     $cacheBranch = $1;
                 } else {
                     /^(..)\s*(\S*)/;
-                    $cacheQualifier{$2} = '+' if $1 ne "  ";
+                    $cacheQualifier{$iswin ? lc($2) : $2} = '+' if $1 ne "  ";
                 }
             }
             close $in;
@@ -61,17 +67,14 @@ sub showRevision {
             exit(1);
         }
     } 
-    if ($cacheBranch eq "") {
-        print "$file outside of Git repository\n" unless $quiet;
-        return;
-    }
+    return "indeterminate" if $cacheBranch eq "";
 
-    $GIT_BRANCH = $cacheBranch;
-    $GIT_QUALIFIER = $cacheQualifier{$file};
+    $GIT_QUALIFIER = $cacheQualifier{$iswin ? lc($file) : $file};
+    $GIT_GUALIFIER .= " {$cacheBranch}" unless $cacheBranch eq "master" || $cacheBranch eq "main";
 
     my $scope = $file;            # look for all files with this name
 
-    open my $in, "git ls-files --full-name HEAD -- \":(icase,top)*$scope\" |";
+    open my $in, "git ls-files --full-name HEAD -- \"$top*$scope\" |";
     @match = <$in>;
     close $in;
     if (@match > 1) {           # if there are many, look for longest unique tail path
@@ -83,22 +86,15 @@ sub showRevision {
             @match = grep(index($_, $scope) >= 0, @match);
         }
     }
-    if (@match == 0 || index($fullpath, $scope) < 0) {
-        print "$file is currently untracked\n" unless $quiet;
-        return;
-    }
+ 
     # get the log entries for all files matching the scope
-    open my $in, "git log HEAD --format=\"%h %ct\"-- \":(icase,top)*$scope\"|";
+    open my $in, "git log HEAD --format=\"%h %ct\"-- \"$top*$scope\"|";
     my @commits = <$in>;
     close $in;
     my $GIT_COMMITS = @commits;
     my ($GIT_SHA1, $UNIX_CTIME) = ($commits[0] =~ /(\S+)\s+(\S+)/);
   
-    printf "%-20s Rev: %2d%s", $path, $GIT_COMMITS, $GIT_QUALIFIER;
-    if ($GIT_BRANCH ne "master" && $GIT_BRANCH ne "main") {
-        print " {$GIT_BRANCH}";
-    }
-    print " -- git $GIT_SHA1 [" . unix2GMT($UNIX_CTIME) . "]\n";
+    return sprintf("%2d%-2s", $GIT_COMMITS, $GIT_QUALIFIER) . "-- $GIT_SHA1 [" . unix2GMT($UNIX_CTIME) . "]";
 }
 
 sub showDirRevisions {
@@ -110,7 +106,7 @@ sub showDirRevisions {
     if (opendir(my $dir, ".")) {
         while (my $f = readdir($dir)) {
             if (-f $f) {
-                showRevision($f);
+                printf "%-20s Rev: %s\n", $f, getRevision($f);
             }
         }
         closedir($dir);
