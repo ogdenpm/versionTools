@@ -14,6 +14,8 @@ my $cacheDir;
 my $cacheBranch;
 my %cacheQualifier;
 
+my $iswin = $ENV{OS} eq "Windows_NT";
+my $top = $iswin ? ":(icase,top)" : ":(top)";
 
 
 sub usage {
@@ -39,7 +41,6 @@ sub getRevision {
     my $fullpath = realpath($path);
     $fullpath =~ s/\\/\//g;         #convert to / usage for later tests;
     my ($volume, $directories,$file) = File::Spec->splitpath(($fullpath));
-
 
     # check if this file is in the repository
     open my $in, "git ls-files HEAD -- \"$file\" |";
@@ -73,8 +74,7 @@ sub getRevision {
     $GIT_GUALIFIER .= " {$cacheBranch}" unless $cacheBranch eq "master" || $cacheBranch eq "main";
 
     my $scope = $file;            # look for all files with this name
-
-    open my $in, "git ls-files --full-name HEAD -- \"$top*$scope\" |";
+    open my $in, "git ls-files --full-name HEAD -- \"$top*/$scope\" |";
     @match = <$in>;
     close $in;
     if (@match > 1) {           # if there are many, look for longest unique tail path
@@ -105,7 +105,7 @@ sub showDirRevisions {
     }
     if (opendir(my $dir, ".")) {
         while (my $f = readdir($dir)) {
-            if (-f $f) {
+            if (-f $f && $f !~ /\.exe$/i) {
                 printf "%-20s Rev: %s\n", $f, getRevision($f);
             }
         }

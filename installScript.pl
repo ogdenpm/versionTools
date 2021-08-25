@@ -68,7 +68,7 @@ sub getRevision {
 
     my $scope = $file;            # look for all files with this name
 
-    open my $in, "git ls-files --full-name HEAD -- \"$top*$scope\" |";
+    open my $in, "git ls-files --full-name HEAD -- \"$top*/$scope\" |";
     @match = <$in>;
     close $in;
     if (@match > 1) {           # if there are many, look for longest unique tail path
