@@ -87,10 +87,12 @@ sub loadDefaults {
         }
     }
     close $in;
-    $GIT_APPDIR = $defaults{GIT_APPDIR} || basename(getcwd);
+    $GIT_APPDIR = basename(getcwd);
+    $GIT_APPNAME = $defaults{GIT_APPNAME} || $GIT_APPDIR;
     if ($GIT_APPID eq "") {
         $GIT_APPID=$defaults{GIT_APPID};
-    } elsif ($GIT_APPID eq '.') {
+    }
+    if ($GIT_APPID eq '.') {
         $GIT_APPID = $APPDIR;
     }
 }
@@ -128,9 +130,9 @@ sub getVersionId {
 sub getVersionString {
     $GIT_CTIME = unix2GMT($UNIX_CTIME);
 
-    $prefix = "$GIT_APPID-" if $GIT_APPID ne "";
+    my $prefix = "$GIT_APPID-" if $GIT_APPID ne "";
     # Use git tag to get the lastest tag applicable to the contents of this directory
-    open my $in, "git tag -l $prefix[0-9]*.*[0-9] --sort=-v:refname --merged $GIT_SHA1 |" or die $!;
+    open my $in, "git tag -l $prefix\[0-9]*.*[0-9] --sort=-v:refname --merged $GIT_SHA1 |" or die $!;
     $strTAG = <$in>;
     chomp $strTAG;
     close $in;
@@ -215,7 +217,7 @@ sub writeOut {
         print "Git Version:          $GIT_VERSION\n";
         print "Build type:           $GIT_BUILDTYPE\n";
         print "SHA1:                 $GIT_SHA1\n";
-        print "App Dir:              $GIT_APPDIR\n";
+        print "App Name:             $GIT_APPNAME\n";
         print "Committed:            $GIT_CTIME\n";
     }
 }
