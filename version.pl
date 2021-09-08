@@ -110,8 +110,8 @@ sub getVersionId {
                 $GIT_BRANCH = $1;
                 $GIT_BUILDTYPE = 1 if $GIT_BRANCH ne 'master' && $GIT_BRANCH ne 'main';
             } elsif (substr($_, 0, 2) ne "  ") {
-                $GIT_QUALIFIER = ".P";
-                $GIT_BUILDTYPE = 2;
+                $GIT_QUALIFIER = "+";
+                $GIT_BUILDTYPE = 1;
                 last;
             }
         }
