@@ -167,7 +167,7 @@ sub checkCache {
         }
     }
     open my $out, ">", $CACHE_FILE or die $!;
-    print $out "$GIT_APPID-$GIT_VERSION-$GIT_SHA1\n";
+    print $out "$GIT_SHA1$GIT_QUALIFIER\n";
     close $out;
     return 0;
 }
