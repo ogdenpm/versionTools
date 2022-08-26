@@ -70,7 +70,7 @@ for /f "tokens=2 delims==." %%A in ('wmic os get LocalDateTime /format:list') do
 set INCLUDE=Y
 for /f %%A in (%CONFIGFILE%) do (
 :: cannot set LINE with a comma in the text so convert comma to colon. Need to quote/unquote to do this
-    call :setSkipping ACTION %%A
+    call :setSkipping %%A
     if [!ACTION!] == [COPY] (
         if [!INCLUDE!] == [Y] (
             for /f "tokens=1,2,* delims=," %%B in ("%%A") do (
@@ -80,14 +80,14 @@ for /f %%A in (%CONFIGFILE%) do (
             )
         )
     ) else (
-        call :updateSkipping INCLUDE !ACTION! %FILE% "%%A"
+        call :updateSkipping !ACTION! %FILE% "%%A"
     )
 )
 goto :eof
 
 :setSkipping result line
 setlocal
-set LINE=%~2
+set LINE=%~1
 set RESULT=COPY
 if [%LINE%] neq [] (
     if [%LINE:~,1%] == [-] (
@@ -96,7 +96,7 @@ if [%LINE%] neq [] (
        if [%LINE:~,1%] == [+] set RESULT=INCLUDE
     )
 )
-endlocal & set %1=%RESULT%
+endlocal & set ACTION=%RESULT%
 goto :eof
 
 
@@ -131,22 +131,22 @@ goto :eof
 setlocal enabledelayedexpansion
 :: because setting a variable with a comma in it isn't supported in windows
 :: modify the input so that that each file is enclosed in []
-set match=%4
+set match=%3
 set match=%match:,=][%
 set match=%match:"=%
 set match=[%match:~1%]
 :: now enclose the current file name in []
-set file=[%~3]
+set file=[%~2]
 :: try removing from the list (also allow * as a wild card)
 call set removed=!match:%file%=!
 if [%removed%] neq [] set removed=%removed:[*]=%
 if [%removed%] neq [%match%] (
-    if [%2] == [INCLUDE] (set result=Y) else (set result=N)
+    if [%1] == [INCLUDE] (set result=Y) else (set result=N)
 ) else (
-    if [%2] == [INCLUDE] (set result=N) else (set result=Y)
+    if [%1] == [INCLUDE] (set result=N) else (set result=Y)
 )
 
-endlocal & if [%removed%] neq [%match%] set %1=%result%
+endlocal & set INCLUDE=%result%
 goto :eof
 
 
