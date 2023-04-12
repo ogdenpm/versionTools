@@ -1,3 +1,4 @@
+
 @echo off
 setlocal enabledelayedexpansion
 rem locally install applications
