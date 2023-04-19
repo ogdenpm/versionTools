@@ -122,7 +122,7 @@ sub getVersionId {
     open my $in, "git log -1 --decorate-refs=\"tags/$cwd-r*\" --format=\"%h,%ct,%D\" -- . |" or die $!;
     ($GIT_SHA1, $GIT_CTIME, $TAG) = split /,/,<$in>, 3;
     close $in;
-    if ($TAG =~ /-r(\d+)(\r)?$/) {   # if tag use it
+    if ($TAG =~ /-r(\w+)(\r)?$/) {   # if tag use it
         $GIT_SHA1 = $1;
     } else {
         $GIT_SHA1 = "g$GIT_SHA1";   # else use SHA1 prefixed with 'g'
@@ -172,5 +172,5 @@ if ($GIT_SHA1 ne "") {
 }
 
 writeOut() if $WMODE != 0;
-print "$cwd $GIT_VERSION\n" if  !$fQUIET;
+print "$cwd - $GIT_VERSION\n" if  !$fQUIET;
 

@@ -225,7 +225,7 @@ sub writeOut {
 
 main:   # main code
 if (lc($ARGV[0]) eq "-v") {
-    print basename($0), ": Rev _REVISION_\n";
+    print basename($0), ": _REVISION_\n";
     exit(0);
 }
 if (!getOpts()) {
