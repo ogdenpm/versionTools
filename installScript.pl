@@ -1,3 +1,13 @@
+# to modify
+# expand all files to be processed using glob
+# for each directory part of the file add to list to be processed
+# starting with shortest path
+# process status ignoring submodules
+#   mark the directory as processed along with any other
+#   subdirectory status highlights
+# repeat until no outstanding directories to process
+#
+#
 use File::Spec;
 use File::Basename;
 use Cwd 'realpath';
@@ -7,171 +17,227 @@ my $cacheBranch;
 my %cacheQualifier;
 my %revisions;
 
-my $iswin = $ENV{OS} eq "Windows_NT";
-my $top = $iswin ? ":(icase,top)" : ":(top)";
+my %trees;
+my @sortedTree;
+my @targets;
+my @files;
+my %statusMap = ("??" => "*Untracked", "!!" => "*Ignored", "A " => "*Pending");
 
+my $defaultScript = "installScript.cfg";
 
 sub usage {
-    print "Usage: ", basename($0), " -v | [targetdir file+]\n";
-    print "Where targetDir and files must exist\n";
-    print "installScript.cfg is used when no arguments are given\n";
+    print "$_[0]\n\n" if $_[0] ne "";
+    print "Usage: ", basename($0), " -v | -h | targetdir file+ | -s scriptFile\n";
+    print "Where:\n";
+    print "-v             shows version information\n";
+    print "-h             shows this help information\n";
+    print "targetdir      where to install to. The directory must exist\n";
+    print "file+          a space separated list of the files to install\n";
+    print "-s scriptFile  takes a list of targetdir and file+ specifications to use\n";
+    print "               from the specified script file\n";
+    print "if no arguments are given -s $defaultScript is assumed\n";
     exit(0);
 }
 
 
-sub unix2GMT {
+sub addFile {
+    my $target = realpath($_[0]);
+    my $file = realpath($_[1]);
+    $_[1] =~ s/\\/\//g;
+    $file =~ s/\\/\//g;     # normalise to / directory separator
+    $file =~ /^(.*\/).*$/;
+    $trees{$1} = 1;
+    push @targets, $target if $targets[-1] ne $target;
+    push @{$files[$#targets]}, $_[1];
+}
+
+
+sub gmt2Ver {
     my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = gmtime($_[0]);
-    return sprintf"%04d-%02d-%02d", 1900 + $year, $mon + 1, $mday;
+    return sprintf"%04d.%d.%d", 1900 + $year, $mon + 1, $mday;
 
 }
 
-sub getRevision {
-    my $path = $_[0];
-    my $GIT_QUALIFIER = " ";
-    my $fullpath = realpath($path);
-    $fullpath =~ s/\\/\//g;         #convert to / usage for later tests;
-    my ($volume, $directories,$file) = File::Spec->splitpath(($fullpath));
+# walk up the tree to find the applicable status
+# pre check that the directory is in a tree has already been done
+sub getSubdirStatus {
+    my $sd = $_[0];
+    while (!defined($branch{$sd})) {
+       $sd =~ s/[^\/]*\/$//;
+    }
+    return $branch{$sd}; 
+}
 
-    return $revisions{$fullpath} if defined($revisions{$fullpath});
-
-    # check if this file is in the repository
-    open my $in, "git ls-files HEAD -- \"$file\" |";
-    my @match = <$in>;
-    close $in;
-    return $revisions{$fullpath} = "untracked" if @match == 0;
-
-
-# check for banch and any outstanding commits
-    if ($cacheDir ne $directories) {
-        if (open my $in, "git status -s -b -uno -- \"$directories\" 2>" . File::Spec->devnull() . " |") {
-            $cacheDir = $directories;
-            %cacheQualifer = ();
-            $cacheBranch = "";
+# get the branch and status
+sub getStatus {
+    @sortedTree = (sort keys %trees);       # process highest tree first
+    my $noneGit;
+    while (my $path = shift @sortedTree) {
+        next if defined($branch{$path}) && $branch{$path} ne "*Submodule";
+        my @submodules;
+        $noneGit = 0;
+        if (open my $in, "git -C \"$path\" status -s -b  --ignored -- . 2>&1  |") {
             while (<$in>) {
-                if (/^## (\w+)/) {
-                    $cacheBranch = $1;
+                if (/^fatal/) {
+                    $branch{$path} = "*Untracked";
+                    $noneGit = 1;
+                    last;
                 } else {
-                    /^(..)\s*(\S*)/;
-                    $cacheQualifier{$iswin ? lc($2) : $2} = '+' if $1 ne "  ";
+                    chomp;
+                    if (/^## HEAD \(no branch\)/) {
+                        $branch{$path} = "(detached)-";
+                    } elsif (/^## (\w+)/) {
+                        $branch{$path} = $1 eq "master" || $1 eq "main" ? "" : "$1-";
+                    } elsif (/^(..)\s*"([^"]*)"/ || /(..)\s*(\S*)/) {
+                        my $s = $statusMap{$1} || "+";
+                        my $f = $2 eq "./" ? $path : "$path$2";
+                        if (-d $f) {
+                            if ($s eq "+") {
+                                $branch{"$f/"} = "*Submodule";
+                            } else {
+                                $branch{$f} = $s; 
+                            }
+                        } else {
+                            $status{$f} = $s;
+                        }
+                    }
                 }
             }
             close $in;
+            next if $noneGit; # if dir is not under git, subdirectories may be
+
+            my @submodules;
+            while (my $subdir= shift @sortedTree) {
+                if (substr($subdir, 0, length($path)) eq $path) {
+                    $branch{$subdir} = getSubdirStatus($subdir);
+                    if ($branch{$subdir} eq "*Submodule") {
+                        push @submodules, $subdir;      # treat submodules as their own trees
+                    }
+                } else {
+                     unshift @sortedTree, $subdir;      # add submodules back
+                     last;
+                }
+             }
+             unshift @sortedTree, @submodules;
         } else {
             print "git not installed\n";
             exit(1);
         }
-    } 
-    return $revisions{$fullpath} = "indeterminate" if $cacheBranch eq "";
-
-    $GIT_QUALIFIER = $cacheQualifier{$iswin ? lc($file) : $file};
-    $GIT_GUALIFIER .= " {$cacheBranch}" unless $cacheBranch eq "master" || $cacheBranch eq "main";
-
-    my $scope = $file;            # look for all files with this name
-
-    open my $in, "git ls-files --full-name HEAD -- \"$top*/$scope\" |";
-    @match = <$in>;
-    close $in;
-    if (@match > 1) {           # if there are many, look for longest unique tail path
-        chomp @match;
-        my @dirs = File::Spec->splitdir($directories);
-        pop @dirs;              # waste the blank dir entry
-        while (@match > 1) {    # loop until tail path is unique
-            $scope = (pop @dirs) . "/$scope";
-            @match = grep(index($_, $scope) >= 0, @match);
-        }
     }
- 
-    # get the log entries for all files matching the scope
-    open my $in, "git log HEAD --format=\"%h %ct\"-- \"$top*$scope\"|";
-    my @commits = <$in>;
+}
+
+
+
+sub getRevision {
+    
+    my $fullpath = realpath($_[0]) . (-d $_[0] ? "/" : "");
+    $fullpath =~ s/\\/\//g;         # convert to / usage for later tests;
+    return $revisions{$fullpath} if defined($revisions{$fullpath}); # previously detemermined to quick return
+    my ($dir, $file) = ($fullpath =~ /^(.*\/)(.*)$/);
+    $file ||= ".";
+    return $revision{$fullpath} = substr($branch{$dir}, 1) if substr($branch{$dir}, 0, 1) eq "*";
+    return $revision{$fullpath} = substr($status{$fullpath}, 1) if substr($status{$fullpath}, 0, 1) eq "*";
+
+    my $sha1, $ctime;
+    open my $in, "git -C \"$dir\" log -1 --format=\"%h %ct\" -- $file |" or die $!;
+    ($sha1, $ctime) = (<$in> =~ /(\S+)\s+(\S+)/);
     close $in;
-    my $GIT_COMMITS = @commits;
-    my ($GIT_SHA1, $UNIX_CTIME) = ($commits[0] =~ /(\S+)\s+(\S+)/);
-  
-    return $revisions{$fullpath} = 
-            sprintf("%2d%-2s", $GIT_COMMITS, $GIT_QUALIFIER) . "-- $GIT_SHA1 [" . unix2GMT($UNIX_CTIME) . "]";
+
+    return $revisions{$fullpath} = sprintf "%s%s.g%s%s",  $branch{$dir}, gmt2Ver($ctime), $sha1, $status{$fullpath} ne "" ? "+" : "";
 }
 
 sub install {
-    my($file, $dir) = @_;
-    my $revision = getRevision($file);
+    getStatus();    # get all of the relevant status info
 
-    my $target = File::Spec->catfile(realpath($dir), $file);
+    for (my $i = 0; $i < @targets; $i++) {
+        my $dir = $targets[$i];
+        print "Installing to $dir\n";
+        for my $file (@{$files[$i]}) {
+            my $revision = getRevision($file);
+            my $name = $file;
+            $name =~ s/.*[\/\\]//;
+            my $target = File::Spec->catfile(realpath($dir), $name);
 
-    if (realpath($file) eq $target) {
-        print "$file - skipping attempt to overwrite source file\n";
-        return;
+            if (realpath($file) eq $target) {
+                print "$file - skipping attempt to overwrite source file\n";
+                return;
+            }
+            my $content;
+
+            open my $in, "<", $file or die $!; {
+                local $/;
+                $content = <$in>;
+            }
+            close $in;
+            my $pattern = "_" . "REVISION" . "_";    # to avoid matching in this file
+            $content =~ s/$pattern/$revision/g;
+            open $out, ">", $target or die $!;
+            print $out $content;
+            close $out;
+            printf "  %-20s %s\n", "$file:", $revision;
+        }
     }
-    my $content;
-
-    open my $in, "<", $file or die $!; {
-        local $/;
-        $content = <$in>;
-    }
-    close $in;
-    my $pattern = "_" . "REVISION" . "_";    # to avoid matching in this file
-    $content =~ s/$pattern/$revision/g;
-    open $out, ">", $target or die $!;
-    print $out $content;
-    close $out;
-    printf "%-20s Rev: %s\n", $file, $revision;
 }
 
 sub useScript {
-    open my $in, "<installScript.cfg" or usage();
-    my $file, $dir;
+    my $script = $_[0];
+    if (! -f $script) {
+        print "script file $script does not exist\n";
+        return;
+    }
+    open my $in, "<", $script or usage("can't read $script");
+    my $flist, $file, $dir;
 
     while (<$in>) {
         next if /^#/ || /^\s*$/;
         chomp;
         if (/^"(.*)"(.*)/ || /^(\S+)(.*)/) {
             $dir = $1;
-            $_ = $2;
-            if (!-d $dir) {
-                print "'$dir' not found, skipping installs\n";
-                $dir = "";
-            } else {
-                print "Installing to $dir\n";
-            }
-        }
-        if ($dir ne "") {
-           while (/"(.*)"(.*)/ || /(\S+)(.*)/) {
-                $file = $1;
-                $_ = $2;
-                if (!-f $file) {
-                    print "file '$file' not found, skipping\n";
-                } else {
-                    install($file, $dir);
+            $flist = $2;
+            if (-d $dir) {
+                while ($flist =~ /^\s*"([^"]*)"(.*)/ || $flist =~ /^\s*(\S+)(.*)/) {
+                    $file = $1;
+                    $flist = $2;
+                    if (-f $file) {
+                        addFile($dir, $file);
+                    } else {
+                        print "file '$file' not found, skipping\n";
+                    }
                 }
+            } else {
+                print "directory '$dir' not found, skipping installs\n";
             }
         }
     }
     close $in;
-
+    install();
 }
+
 main:
 if ($#ARGV == 0) {
     if ($ARGV[0] eq "-v") {
-        print basename($0), ": Rev _REVISION_\n";
+        print basename($0), ": _REVISION_\n";
     } else {
         usage();
     }
 } else {
-    my $dir = shift(@ARGV);
-    if ($dir eq "") {
-        useScript();
-    } elsif (!-d $dir) {
-       print "directory $dir must exist\n";
-       usage();
-    } else {
-        print "Installing to $dir\n";
+    my $opt = shift(@ARGV);
+    if ($opt eq "-s") {
+        useScript($ARGV[0]);
+    } elsif ($opt eq "") {
+        useScript($defaultScript);
+    } elsif  (-d $opt) {
+        # convert filenames to full path and find the parent directory
         while ((my $file = shift(@ARGV)) ne "") {
-            if (!-f $file) {
-                print "file $file doesn't exist\n";
+            if (-f $file) {
+                addFile($opt, $file);
             } else {
-                install($file, $dir);
+                print "file '$file' not found, skipping\n";
             }
         }
+        install();
+    } else {
+       usage("directory '$opt' not found");
     }
 }
 
