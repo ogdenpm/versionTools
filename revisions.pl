@@ -1,147 +1,267 @@
 #! /usr/bin/perl 
-# this is perl port of revisions.cmd + filever.cmd
+# display file/directory revisions
 use File::Spec;
 use File::Basename;
-
 use Cwd 'realpath';
 
-# Used simplified version of version.cmd to show the revisions to a specific file
-# since creation.
-# Limitation is that it has limited accuracy on tracking moves or and does not support renames (except case change)
-my $quiet;
+%statusMap = ("??" => "*Untracked", "!!" => "*Ignored", "A " => "*Pending");
 
-my $cacheDir;
-my $cacheBranch;
-my %cacheQualifier;
 
-my $iswin = $ENV{OS} eq "Windows_NT";
-my $top = $iswin ? ":(icase,top)" : ":(top)";
-
+my %status;
+my @items;
+my %trees;
+my $untracked;
+my $ignored;
+my $noexpand;
+my $appmode;
+my %revisions;
 
 sub usage {
     my $invokeName = basename($0);
     print <<EOF;
-usage: $invokeName [-v] | [-q] [file | dir]*
+usage: $invokeName -v | -h | [-a|-i|-u|-n]* [--] [file | dir]*
 where -v shows version info
-      -q supresses no Git info for file message
-if no file or dir specified - defaults to .
+      -h show usage and exit
+      -a assume directories contain apps
+      -n no expansion of directory
+      -i include ignored files  
+      -u include untracked files
+      -- forces end of option processing, to allow file with - prefix
+if no file or dir specified then the default is .
+file or dir can contain wildcard characters but hidden directories are excluded
 EOF
     exit(0);
 }
 
-sub unix2GMT {
+sub gmt2Ver {
     my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = gmtime($_[0]);
-    return sprintf"%04d-%02d-%02d", 1900 + $year, $mon + 1, $mday;
+    return sprintf"%04d.%d.%d", 1900 + $year, $mon + 1, $mday;
 
 }
 
-sub getRevision {
-    my $path = $_[0];
-    my $GIT_QUALIFIER = " ";
-    my $fullpath = realpath($path);
-    $fullpath =~ s/\\/\//g;         #convert to / usage for later tests;
-    my ($volume, $directories,$file) = File::Spec->splitpath(($fullpath));
+# walk up the tree to find the applicable status
+# pre check that the directory is in a tree has already been done
+sub getSubdirStatus {
+    my $sd = $_[0];
+    while (!defined($branch{$sd})) {
+       $sd =~ s/[^\/]*\/$//;
+    }
+    return $branch{$sd}; 
+}
 
-    # check if this file is in the repository
-    open my $in, "git ls-files HEAD -- \"$file\" |";
-    my @match = <$in>;
-    close $in;
-    return "untracked" if @match == 0;
+sub isVersionFile {
+    $_[0] =~ /^(.*\/)(.*)$/;
+    my ($dir, $file) = ($1, $2);
+    if (!defined($vfile{$dir})) {
+        my $vf;
+        if (open my $in, "<", "${dir}version.in") {
+            $vf = $1 if <$in> =~ /^\[([^\]]*)\]/;
+            close $in;
+        }
+        $vfile{$dir} = $vf || "_version.h";        
+    }
+    return $file eq $vfile{$dir};
+}
 
-# check for banch and any outstanding commits
-    if ($cacheDir ne $directories) {
-        if (open my $in, "git status -s -b -uno -- \"$directories\" 2>" . File::Spec->devnull() . " |") {
-            $cacheDir = $directories;
-            %cacheQualifer = ();
-            $cacheBranch = "";
+
+sub propagateMod {
+    my ($root, $item) = @_;
+    return if ($appmode && isVersionFile($item));
+    $item .= "/";
+    do {
+        $item =~ s/[^\/]*\/$//;
+        if (!defined($status{$item}) || $status{$item} eq "*Submodule") {
+            $status{$item} .= "+";
+        } else {
+            return;
+        }
+    } while $item ne $root;
+}
+
+# get the branch and status
+sub getStatus {
+    @sortedTree = (sort keys %trees);       # process highest tree first
+    my $noneGit;
+    while (my $path = shift @sortedTree) {
+        next if defined($branch{$path});
+        $noneGit = 0;
+        if (open my $in, "git -C \"$path\" status -s -b  --ignored -- . 2>&1  |") {
             while (<$in>) {
-                if (/^## (\w+)/) {
-                    $cacheBranch = $1;
+                if (/^fatal/) {
+                    $branch{$path} = "*Untracked";
+                    $noneGit = 1;
+                    last;
                 } else {
-                    /^(..)\s*(\S*)/;
-                    $cacheQualifier{$iswin ? lc($2) : $2} = '+' if $1 ne "  ";
+                    chomp;
+                    if (/^## HEAD \(no branch\)/) {
+                        $branch{$path} = "(detached)-";
+                    } elsif (/^## (\w+)/) {
+                        $branch{$path} = $1 eq "master" || $1 eq "main" ? "" : "$1-";
+                    } elsif (/^(..)\s*"([^"]*)"/ || /(..)\s*(\S*)/) {
+                        my $s = $statusMap{$1} || "+";
+                        my $f = $2 eq "./" ? $path : "$path$2";
+                        if (-d $f) {
+                            if ($s eq "+") {
+                                $branch{"$f/"} = "*Submodule";
+                            } else {
+                                $branch{$f} = $s; 
+                            }
+                        } else {
+                            if (!$appmode || !isVersionFile($f)) {
+                                $status{$f} = $s;
+                                propagateMod($path, $f) if $s eq "+" || $s eq "*Pending";
+                            }
+                        }
+                    }
                 }
             }
             close $in;
+            next if $noneGit; # if dir is not under git, subdirectories may be
+
+            while (my $subdir= shift @sortedTree) {
+                if (substr($subdir, 0, length($path)) eq $path) {
+                    $branch{$subdir} = getSubdirStatus($subdir);
+                } else {
+                     unshift @sortedTree, $subdir;      # separate tree
+                     last;
+                }
+             }
         } else {
             print "git not installed\n";
             exit(1);
         }
-    } 
-    return "indeterminate" if $cacheBranch eq "";
-
-    $GIT_QUALIFIER = $cacheQualifier{$iswin ? lc($file) : $file};
-    $GIT_GUALIFIER .= " {$cacheBranch}" unless $cacheBranch eq "master" || $cacheBranch eq "main";
-
-    my $scope = $file;            # look for all files with this name
-    open my $in, "git ls-files --full-name HEAD -- \"$top*/$scope\" |";
-    @match = <$in>;
-    close $in;
-    if (@match > 1) {           # if there are many, look for longest unique tail path
-        chomp @match;
-        my @dirs = File::Spec->splitdir($directories);
-        pop @dirs;              # waste the blank dir entry
-        while (@match > 1) {    # loop until tail path is unique
-            $scope = (pop @dirs) . "/$scope";
-            @match = grep(index($_, $scope) >= 0, @match);
-        }
     }
- 
-    # get the log entries for all files matching the scope
-    open my $in, "git log HEAD --format=\"%h %ct\"-- \"$top*$scope\"|";
-    my @commits = <$in>;
-    close $in;
-    my $GIT_COMMITS = @commits;
-    my ($GIT_SHA1, $UNIX_CTIME) = ($commits[0] =~ /(\S+)\s+(\S+)/);
-  
-    return sprintf("%2d%-2s", $GIT_COMMITS, $GIT_QUALIFIER) . "-- $GIT_SHA1 [" . unix2GMT($UNIX_CTIME) . "]";
 }
 
-sub showDirRevisions {
-    my $home = File::Spec->curdir();
-    if ($_[0] ne ".") {
-        print "Revisions for $_[0]\n";
-        chdir $_[0];
+# return Revision number for a file / directory
+# the revision number is one of formats listed below
+# with yyyy being the commit year, mm the commit month, dd the commid day, rr the commit tag value
+# cc is the number of commits for the file/directory. Note numbers have leading 0s surpressed
+# sha1 is the commit sha1
+# optional + indicates modified uncommitted file
+# Untracked             - file/directory not in Git
+# Ignored               - file/directory not in Git but explicitly ignored
+# Pending               - file not yet in Git but added to staging area
+# Submodule             - file is in a submoudle, if detected as such
+# if -a and directory
+# yyyy.mm.dd.rr+        - directory with an associated tag
+# yyyy.mm.dd.sha1+      - directory has no associated tag, sha1 is the base commit
+# else
+# yyyy.mm.dd.cc+ [sha1] - sha1 is the base commit sha1
+#
+sub getRevision {
+    
+    my $fullpath = realpath($_[0]) . (-d $_[0] ? "/" : "");
+    $fullpath =~ s/\\/\//g;         # convert to / usage for later tests;
+    return $revisions{$fullpath} if defined($revisions{$fullpath}); # previously detemermined so quick return
+    my ($dir, $file) = ($fullpath =~ /^(.*\/)(.*)$/);
+    $file ||= ".";
+    $branch{$dir} = getSubdirStatus($dir) if !defined($branch{$dir});
+    return $revision{$fullpath} = substr($branch{$dir}, 1) if substr($branch{$dir}, 0, 1) eq "*";
+    return $revision{$fullpath} = substr($status{$fullpath}, 1) if substr($status{$fullpath}, 0, 1) eq "*";
+
+    $fullpath =~ /\/([^\/]*)\/$/;
+    my $prefix = $1;
+    open my $in, "git -C \"$dir\" log --follow -M100% --first-parent --decorate-refs=\"tags/$prefix-r*\" --format=\"%h,%ct,%D\" -- $file |" or die $!;
+    my @commits = <$in>;
+    close $in;
+    my ($sha1, $ctime, $tag) = split /,/,$commits[0];
+    return $revisions{$fullpath} = "Untracked" if $#commits < 0;    # catch empty directory
+    if (-d $fullpath && $appmode) {
+        $sha1 = $1 if $tag =~ /-r(\w+)\r?$/;
+        return $revisions{$fullpath} = $branch{$dir} . gmt2Ver($ctime) . ".$sha1$status{$fullpath}";
+    } else {
+        my $rev = gmt2Ver($ctime) . "." . ($#commits + 1) .  $status{$fullpath};
+        return $revisions{$fullpath} = sprintf "%s%-14s [%s]", $branch{$dir}, $rev, $sha1;
     }
-    if (opendir(my $dir, ".")) {
-        while (my $f = readdir($dir)) {
-            if (-f $f && $f !~ /\.exe$/i) {
-                printf "%-20s Rev: %s\n", $f, getRevision($f);
+}
+
+
+
+sub addItem {
+    my $item = $_[0];
+    $item =~ tr/\\/\//;
+    push @items, $item;     # save in user specified request
+    $item = realpath($item) . (-d $item ? "/" : "");
+    $item =~ tr/\\/\//;
+    $item =~ /^(.*\/).*$/;
+    $trees{$1} = 1;
+}
+
+sub showItems {
+    getStatus();
+    for my $item (@items) {
+        my $irev = getRevision($item);
+        next if $irev eq "Untracked" && !$untracked ||  $irev eq "Ignored" && !$ignored;
+        if (-d $item && !$noexpand && $irev ne "Submodule") {
+            printf "*Directory* %-18s %s\n", $item , $irev;
+            if (opendir my $dir, $item) {
+                for my $f (sort readdir($dir)) {
+                    next if $f eq "." || $f eq ".." || $f eq ".git";
+                    my $frev = getRevision("$item/$f");
+                    next if $frev eq "Untracked" && !$untracked ||  $frev eq "Ignored" && !$ignored;
+                    #                    $frev =~ s/.*-(\d\d\d\d\.)/\1/;
+                    printf "- %-28s %s\n", $f . (-d "$item/$f" ? "/" : ""), $frev;
+                } 
+            } else {
+                print "Can't read directory $item\n";
             }
+        } else {
+            printf "%-30s %s\n", (-d $item ? "$item/" : $item), $irev;
         }
-        closedir($dir);
     }
-    chdir $home;
 }
 
 
 
 main:   # main code
-if (lc($ARGV[0]) eq "-v") {
-    print basename($0), ": Rev _REVISION_\n";
-    exit(0);
-}
-if ($ARGV[0] eq "-q") {
-    $quiet = 1;
+
+while ($ARGV[0]) {
+    my $opt = lc($ARGV[0]);
+    if ($opt eq "-v") {
+        print basename($0), ": _REVISION_\n";
+        exit(0);
+    } elsif ($opt eq "-u") {
+        $untracked = 1;
+    } elsif ($opt eq "--") {
+        last;
+    } elsif ($opt eq "-i") {
+        $ignored = 1;
+    } elsif ($opt eq "-a") {
+        $appmode = 1;
+    } elsif ($opt eq "-n") {
+        $noexpand = 1;
+    } elsif (substr($opt, 0, 1) eq '-') {
+        usage();
+    } else {
+        last;
+    }
     shift @ARGV;
 }
-usage() if substr($ARGV[0], 0, 1) eq '-';
 
-if (@ARGV[0] eq "") {
-    showDirRevisions(".");
-} else {
-    while ((my $w = shift @ARGV) ne "") {
-        for my $a (glob($w)) {
-            if (-f $a) {
-                showRevision($a);
-            } elsif (-d $a) {
-                showDirRevisions($a);
-            } else {
-                print "$a not a file or directory\n";
-                usage();
+$ARGV[0] = '.' if $#ARGV < 0;
+
+while ((my $a = shift @ARGV) ne "") {
+    if (-f $a || -d $a) {
+        addItem($a);
+    } else {
+        my @dirs;
+        for my $f (sort glob($a)) {
+            if (-f $f) {
+                addItem($f);
+            } elsif (-d $f) {
+               push @dirs, $f;
             }
+        }
+        for my $d (@dirs) {
+            addItem($d);
         }
     }
 }
+
+
+showItems();
+
+
 
 
