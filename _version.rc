@@ -40,7 +40,7 @@ BEGIN
             VALUE "ProductVersion", GIT_VERSION
 #endif
             VALUE "OriginalFilename", APP_NAME ".exe"
-            VALUE "ProductName" APP_PRODUCT
+            VALUE "ProductName", APP_PRODUCT
 
         END
     END
