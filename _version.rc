@@ -1,7 +1,7 @@
 #include <verrsrc.h>
 
-#include "_version.h"
-#include "appdefaults.h"
+#include <_version.h>
+#include <appinfo.h>
 // in the unlikely case that APP_PRODUCT and APP_OWNER are not
 // defined given them sensible values
 #ifndef APP_PRODUCT
