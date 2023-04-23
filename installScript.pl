@@ -73,7 +73,7 @@ sub getStatus {
     @sortedTree = (sort keys %trees);       # process highest tree first
     my $noneGit;
     while (my $path = shift @sortedTree) {
-        next if defined($branch{$path}) && $branch{$path} ne "*Submodule";
+        next if defined($branch{$path});
         my @submodules;
         $noneGit = 0;
         if (open my $in, "git -C \"$path\" status -s -b  --ignored -- . 2>&1  |") {
@@ -106,19 +106,14 @@ sub getStatus {
             close $in;
             next if $noneGit; # if dir is not under git, subdirectories may be
 
-            my @submodules;
             while (my $subdir= shift @sortedTree) {
                 if (substr($subdir, 0, length($path)) eq $path) {
                     $branch{$subdir} = getSubdirStatus($subdir);
-                    if ($branch{$subdir} eq "*Submodule") {
-                        push @submodules, $subdir;      # treat submodules as their own trees
-                    }
                 } else {
                      unshift @sortedTree, $subdir;      # add submodules back
                      last;
                 }
              }
-             unshift @sortedTree, @submodules;
         } else {
             print "git not installed\n";
             exit(1);
@@ -126,24 +121,35 @@ sub getStatus {
     }
 }
 
-
+# return Revision number for a file / directory
+# the revision number is one of formats listed below
+# with yyyy being the commit year, mm the commit month, dd the commid day
+# cc is the number of commits for the file/directory. Note numbers have leading 0s surpressed
+# sha1 is the commit sha1
+# optional + indicates modified uncommitted file
+# Untracked             - file/directory not in Git
+# Ignored               - file/directory not in Git but explicitly ignored
+# Pending               - file not yet in Git but added to staging area
+# Submodule             - file is in a submodule, if detected as such
+# yyyy.mm.dd.cc+ [sha1] - for file, sha1 is the base commit sha1
 
 sub getRevision {
     
     my $fullpath = realpath($_[0]) . (-d $_[0] ? "/" : "");
     $fullpath =~ s/\\/\//g;         # convert to / usage for later tests;
-    return $revisions{$fullpath} if defined($revisions{$fullpath}); # previously detemermined to quick return
+    return $revisions{$fullpath} if defined($revisions{$fullpath}); # previously detemermined so quick return
     my ($dir, $file) = ($fullpath =~ /^(.*\/)(.*)$/);
     $file ||= ".";
     return $revision{$fullpath} = substr($branch{$dir}, 1) if substr($branch{$dir}, 0, 1) eq "*";
     return $revision{$fullpath} = substr($status{$fullpath}, 1) if substr($status{$fullpath}, 0, 1) eq "*";
 
-    my $sha1, $ctime;
-    open my $in, "git -C \"$dir\" log -1 --format=\"%h %ct\" -- $file |" or die $!;
-    ($sha1, $ctime) = (<$in> =~ /(\S+)\s+(\S+)/);
+    $fullpath =~ /\/([^\/]*)\/$/;
+    my $prefix = $1;
+    open my $in, "git -C \"$dir\" log --follow -M100% --first-parent --decorate-refs=\"tags/$prefix-r*\" --format=\"%h,%ct,%D\" -- $file |" or die $!;
+    my @commits = <$in>;
     close $in;
-
-    return $revisions{$fullpath} = sprintf "%s%s.g%s%s",  $branch{$dir}, gmt2Ver($ctime), $sha1, $status{$fullpath} ne "" ? "+" : "";
+    my ($sha1, $ctime, $tag) = split /,/,$commits[0];
+    return $revisions{$fullpath} = $branch{$dir} . gmt2Ver($ctime) . "." . ($#commits + 1) .  "$status{$fullpath} [$sha1]";
 }
 
 sub install {
