@@ -200,19 +200,26 @@ sub useScript {
         if (/^"(.*)"(.*)/ || /^(\S+)(.*)/) {
             $dir = $1;
             $flist = $2;
-            if (-d $dir) {
-                while ($flist =~ /^\s*"([^"]*)"(.*)/ || $flist =~ /^\s*(\S+)(.*)/) {
-                    $file = $1;
-                    $flist = $2;
-                    if (-f $file) {
-                        addFile($dir, $file);
-                    } else {
-                        print "file '$file' not found, skipping\n";
-                    }
-                }
-            } else {
-                print "directory '$dir' not found, skipping installs\n";
+        } elsif (/^\s+(.*)/) {
+            if ($dir eq "") {
+                print "target missing on $_\n";
+                next;
             }
+            next if !-d $dir;   # already reported not a directory
+            $flist = $1;
+        }
+        if (-d $dir) {
+            while ($flist =~ /^\s*"([^"]*)"(.*)/ || $flist =~ /^\s*(\S+)(.*)/) {
+                $file = $1;
+                $flist = $2;
+                if (-f $file) {
+                    addFile($dir, $file);
+                } else {
+                    print "file '$file' not found, skipping\n";
+                }
+            }
+        } else {
+            print "directory '$dir' not found, skipping installs\n";
         }
     }
     close $in;
