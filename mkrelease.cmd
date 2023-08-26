@@ -171,7 +171,7 @@ endlocal & set %1=%y%-%m:~-2%-%d:~-2%T%h:~-2%:%n:~-2%:%s:~-2% & set %2=%v%
 goto :eof
 
 :getTagNum
-for /f %%I in ('git tag -l "%TAG_PREFIX%-r[1-9]*" --sort=-creatordate') do set TAG=%%I& goto :done
+for /f %%I in ('git tag -l -i "%TAG_PREFIX%-r[1-9]*" --sort=-creatordate') do set TAG=%%I& goto :done
 :done
 if defined TAG (
     set /A TAG_NUM=!TAG:%TAG_PREFIX%-r=! + 1
