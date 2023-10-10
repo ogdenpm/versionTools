@@ -91,7 +91,7 @@ if exist %CFG_FILE% (
     for /f %%A in ('findstr /r /i /c:"git_version.*[\"']@@[\"']" /c:"[\"']@@[\"'].*git_version" %CFG_FILE%') do set TEMPLATE=1
 )
 if not defined VER_FILE set VER_FILE=%DEF_VER_FILE%
-
+set VER_FILE=%VER_FILE:/=\%
 set TAG_PREFIX=
 for /f %%A in ("%CD%") do set TAG_PREFIX=%%~nxA
 call :getOldVersion

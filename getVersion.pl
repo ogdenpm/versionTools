@@ -60,6 +60,7 @@ sub getConfig {
         close $in;
         if ($template[0] =~ /^\[([^\]]+)]/) {
             $VER_FILE = $1;
+            $VER_FILE =~ s/\\/\//g;
             shift @template;
         }
         @TEMPLATE = @template if grep(/(git_version.*["']\@\@["']|["']\@\@["'].*git_version)/i, @template);
