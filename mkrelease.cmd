@@ -32,7 +32,6 @@ set OPT=%~1
 if "%OPT:~0,1%" == "-" (
     if /I "%OPT%" == "-f" set forceCOMMIT=1 & SHIFT & goto optloop
     if /I "%OPT%" == "-r" if not defined TAG_NUM if "%~2" neq "" set TAG_NUM=%~2& SHIFT & SHIFT & goto optloop
-    if /I "%OPT%" == "-t" if not defined TEMPLATE if exist "%~2" set TEMPLATE=%~2& SHIFT & SHIFT & goto optloop
     if /I "%OPT%" == "-m" if not defined MESSAGE if "%~2" neq "" set MESSAGE=%~2& SHIFT & SHIFT & goto optloop
     goto USAGE
 )
@@ -61,10 +60,21 @@ REM ===================
 :START
 rem check for configuration file
 if exist %CFG_FILE% (
-    set /p firstLine=<%CFG_FILE%
-    if "!firstLine:~0,1!" == "[" for /f "delims=[]" %%A in ("!firstLine!") do set VER_FILE=%%A&set SKIP=skip=1
-    for /f %%A in ('findstr /r /i /c:"git_version.*[\"']@@[\"']" /c:"[\"']@@[\"'].*git_version" %CFG_FILE%') do set TEMPLATE=1
+    for /f %%A in (%CFG_FILE%) do (
+        if "%%A" neq "" (
+            if "!SKIP!" neq "" set TEMPLATE=1& goto :endTemplate
+            set firstLine=%%A
+            if  "!firstLine:~0,1!" == "[" (
+                set SKIP=skip=1
+                for /f "delims=[]" %%Z in ("!firstLine!") do set VER_FILE=%%Z
+            ) else (
+                set TEMPLATE=1
+                goto :endTemplate
+            )
+        )
+    )
 )
+:endTemplate
 if not defined VER_FILE set VER_FILE=%DEF_VER_FILE%
 
 CALL :GET_BRANCH
@@ -122,7 +132,8 @@ if not defined TEMPLATE (
 ) else (
     for /f "%SKIP% delims=" %%L in (%CFG_FILE%) do (
         set LINE=%%L
-        echo !LINE:@@=%GIT_VERSION%!>>%VER_FILE%
+        set LINE=!LINE:@V@=%GIT_VERSION%!
+        echo !LINE:@D@=%CTIME:T= %!>>%VER_FILE%
     )
 )
 git add %VER_FILE%
@@ -159,15 +170,15 @@ goto :eof
 setlocal
 :: wmic leave milliseconds blank and FOR doesn't pick this up so tokens adjusted accordingly
 for /f "tokens=2,4,5,6,8,10 skip=1 delims=," %%A in ('wmic path Win32_UTCTime get /format:csv') do (
-    set d=10%%A
-    set h=10%%B
-    set n=10%%C
-    set m=10%%D
-    set s=10%%E
-    set y=%%F
+    set /a m=100+%%D
+    set /a d=100+%%A
+    set /a h=100+%%B
+    set /a n=100+%%C
+    set /a s=100+%%E
+    set /a y=10000+%%F
     set v=%%F.%%D.%%A
 )
-endlocal & set %1=%y%-%m:~-2%-%d:~-2%T%h:~-2%:%n:~-2%:%s:~-2% & set %2=%v%
+endlocal & set %1=%y:~-4%-%m:~-2%-%d:~-2%T%h:~-2%:%n:~-2%:%s:~-2% & set %2=%v%
 goto :eof
 
 :getTagNum
@@ -179,3 +190,4 @@ if defined TAG (
     set TAG_NUM=1
 )
 goto :eof
+
