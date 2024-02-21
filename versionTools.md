@@ -39,17 +39,19 @@ There are several utilities that support the new version format
 This utility is the primary utility used to generate a version string for an application. It  should be run from within the directory for which the version string is required.
 
 ```
-usage: getVersion -v | -h | [-q] [-w|-W]
+usage: getVersion -v | -h | [-q] [-s] [-w|-W]
 -v	  shows the version of the script
 -h	  shows simple help
 -q	  supresses displaying the version on the console if file written
+-s	  simplified console output version, also no warning messages
 -w	  writes the header file if the version changed
 -W    writes the header file even if the version was unchanged
 
 The default generated file is _version.h as a C/C++ header file
 This can be overriden using a configuration file version.in, see below.
 
-Because the -W option always writes the header file, it can be used for force a rebuild of files that dependend on it. By using __DATE__ and __TIME__ macros the build date/time can be captured.
+Because the -W option always writes the header file, it can be used for force a rebuild of files that dependend on it. For C and C++ by using __DATE__ and __TIME__ macros the build date/time can be captured.
+The -s option is to support build tool capture of the version string from stdout
 ```
 
 #### How it works
@@ -81,22 +83,26 @@ If **version.in** is not present the **gitVersion** -w/-W options write a simple
 
 However to support other languages **getVersion** if **version.in** exists it will be used to override the generated file name or content, or both. The **version.in** file is processed as follows
 
-- If the first line is of the format [filename], then filename will be used instead of _version.h.
-- If there is any other content this is treated as a template and is copied verbatim into the target file, unless the line contains the case insensitive text GIT_VERSION and a single or double quoted pair of @ characters. In this case the @@ is replaced by the version string. Note there should be no other  quoted items on the line.
+If the first none blank line is of the format [filename], then filename will be used instead of _version.h.
+
+If there is any other content this is treated as a template and is copied into the target file, replacing @V@ with the GIT_VERSION string and @D@ with the current UTC  date and time in yyyy-mm-dd hh:mm:ss format.
+
+The @D@ option is of use when the date and time is needed and  no alternative solution exists.
 
 ```
 Some examples
 To include some static information, still writing to _version.h
-#define APP_NAME    "zas"
-#define APP_CONTRIBUTOR "Andrey Nikitin"
-#define GIT_VERSION "@@"
+#define APP_NAME    "superprog"
+#define APP_CONTRIBUTOR "A N Other"
+#define GIT_VERSION "@V@"
 
 To create an assembler version string, writing to ver.inc
 [ver.inc]
-myver:	db '@@', 0		; git_version
+myver:	db '@V@', 0		; git_version (see note below)
+build:	db '@D@', 0		; the build date
 ```
 
-
+Note a line containing the text GIT_VERSION (case insensitive) is assumed to contain the previous file version, which is used to generate a default version string if Git is not in use. To be detected the version string should be enclosed in single or double quotes and the first quoted string on the line.
 
 ### mkRelease - mkrelease.cmd (windows batch)
 
@@ -273,6 +279,6 @@ The '-' will exclude only the named files from processing. -* disables all proce
 ------
 
 ```
-Updated by Mark Ogden 23-Apr-2023
+Updated by Mark Ogden 11-Feb-2024
 ```
 
