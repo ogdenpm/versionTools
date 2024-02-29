@@ -170,14 +170,16 @@ sub install {
             }
             my $content;
 
-            open my $in, "<", $file or die $!; {
+            open my $in, "<:raw", $file or die $!; {
                 local $/;
                 $content = <$in>;
             }
             close $in;
-            my $pattern = "_" . "REVISION" . "_";    # to avoid matching in this file
-            $content =~ s/$pattern/$revision/g;
-            open $out, ">", $target or die $!;
+            if (-T $file) {
+                my $pattern = "_" . "REVISION" . "_";    # to avoid matching in this file
+                $content =~ s/$pattern/$revision/g;
+            }
+            open $out, ">:raw", $target or die $!;
             print $out $content;
             close $out;
             printf "  %-20s %s\n", "$file:", $revision;
