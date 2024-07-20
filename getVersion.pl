@@ -149,7 +149,7 @@ sub getVersionString {
 }
 
 sub writeOut {
-    return if $WMODE == 1 && $OLD_GIT_VERSION eq $GIT_VERSION;
+    return if $WMODE == 1 && -f $VER_FILE && $OLD_GIT_VERSION eq $GIT_VERSION;
     open my $out, ">:raw", $VER_FILE or die "can't write $VER_FILE";
     for my $line (@TEMPLATE) {
         $line =~ s/\@V\@/$GIT_VERSION/g;

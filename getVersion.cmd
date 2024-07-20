@@ -192,7 +192,7 @@ goto :EOF
 :WRITE_OUT
 :: -------
 SETLOCAL ENABLEDELAYEDEXPANSION
-if %WMODE% == 1 if "!OLD_GIT_VERSION!" == "%GIT_VERSION%" goto :EOF
+if %WMODE% == 1 if exist %VER_FILE% if "!OLD_GIT_VERSION!" == "%GIT_VERSION%" goto :EOF
 :: create header file
 
 
