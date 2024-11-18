@@ -71,7 +71,7 @@ bool writeFile = false;
 bool force     = false;
 
 static bool isPrefix(char const *str, char const *prefix) {
-    while (*prefix && tolower(*str++) == *prefix++)
+    while (*prefix && tolower(*str++) == tolower(*prefix++))
         ;
     return *prefix == '\0';
 }
@@ -259,9 +259,9 @@ static void generateVersion(bool isApp) {
         int dResult = execute(diffIndexNameCmd, &exeBuf, false);
 
         if (isApp) { // for app check don't consider the version file
-            if (execute(diffIndexCmd, &exeBuf, false) == 0) {
+            if (execute(diffIndexNameCmd, &exeBuf, false) == 0 && exeBuf.str[0]) {
                 char *s = strchr(exeBuf.str, '\n'); // get end of first line
-                *s++    = '\0';                     // convert to string
+                    *s++    = '\0';                     // convert to string
                 // if there are no more lines and this one has a file name versionFile, then treat
                 // as unchanged
                 if (*s || stricmp(basename(exeBuf.str), versionFile) != 0)
