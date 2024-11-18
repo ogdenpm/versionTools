@@ -71,7 +71,7 @@ typedef struct {
 } tag_t;
 
 static bool isPrefix(char const *str, char const *prefix) {
-    while (*prefix && tolower(*str++) == *prefix++)
+    while (*prefix && tolower(*str++) == tolower(*prefix++))
         ;
     return *prefix == '\0';
 }
