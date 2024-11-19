@@ -20,7 +20,6 @@ char const help[] = "Usage:  %s [options] [directory | file]*\n"
                     "Where options are:\n"
                     "  -w      write new version file if version has updated\n"
                     "  -f      force write new version file\n"
-                    "  -q      don't display version if version file is updated\n"
                     "  -c file set alternative configuration file instead of version.in\n"
                     "  -d      show debugging information\n"
                     "If no directory or file is specified '.' is assumed\n";
@@ -337,16 +336,13 @@ static void getOneVersion(char *name) {
 }
 
 int main(int argc, char **argv) {
-    while (getopt(argc, argv, "dfqwuc:") != EOF) {
+    while (getopt(argc, argv, "dfwuc:") != EOF) {
         switch (optopt) {
         case 'f':
             force = true;
             // FALLTHROUGH
         case 'w':
             writeFile = true;
-            break;
-        case 'q':
-            quiet = true;
             break;
         case 'd':
             debug = true;
