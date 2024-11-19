@@ -64,6 +64,7 @@ char oldVersion[256];
 char const *configFile = "version.in";
 char *versionFile;
 
+bool noGit; // set to true if git isn't accessible
 
 enum { DIRECTORY, SINGLEFILE, OTHER }; // path types
 
@@ -71,7 +72,7 @@ bool writeFile = false;
 bool force     = false;
 
 static bool isPrefix(char const *str, char const *prefix) {
-    while (*prefix && tolower(*str++) == tolower(*prefix++))
+    while (*prefix && *str++ == *prefix++)
         ;
     return *prefix == '\0';
 }
@@ -142,6 +143,7 @@ static bool parseVersion(char *line) {
 }
 
 static void getOldVersion() {
+    *oldVersion = '\0';
     FILE *fp = fopen(versionFile, "rt");
     if (fp) {
         char line[256];
@@ -228,13 +230,8 @@ static void show(char **s) {
 #endif
 
 static void generateVersion(bool isApp) {
-    *version    = '\0';
     int lResult = execute(logCmd, &exeBuf, false);
-    if (lResult < 0)
-        debugPrint("Can't find git");
-    else if (lResult == 128 || exeBuf.str[0] == '\0')
-        debugPrint("%s: Not in a repository", appName);
-    else {
+    if (lResult == 0 && exeBuf.str[0]) {
         char *s = strchr(exeBuf.str, '\n'); // remove any trailing new line
         if (s)
             *s = '\0';
@@ -244,13 +241,18 @@ static void generateVersion(bool isApp) {
         if ((s = strchr(pSha1, ',')))
             *s = '\0';
         char *pCtime = s ? s + 1 : "";
+        char rev[128];
         if (s = strchr(pCtime, ',')) {
             if (isPrefix(++s, tagPrefix)) { // skip comma "tag: " appname "-r"
                 s += strlen(tagPrefix);
-                if (isdigit(*s)) {
-                    pSha1 = s;
-                    while (s = strchr(s, '.')) // old versions allowed . so replace with _
-                        *s++ = '_';
+                if (isdigit(*s) &&
+                    !strchr(s, '-')) { // avoid issue with apps named {name} and {name}-r
+                    char *t = pSha1 = rev;
+                    while (isdigit(*s)) // but '-' between release and qualifier if present
+                        *t++ = *s++;
+                    if (*s)
+                        *t++ = '-';
+                    strcpy(t, s);
                 }
             }
         }
@@ -261,7 +263,7 @@ static void generateVersion(bool isApp) {
         if (isApp) { // for app check don't consider the version file
             if (execute(diffIndexNameCmd, &exeBuf, false) == 0 && exeBuf.str[0]) {
                 char *s = strchr(exeBuf.str, '\n'); // get end of first line
-                    *s++    = '\0';                     // convert to string
+                *s++    = '\0';                     // convert to string
                 // if there are no more lines and this one has a file name versionFile, then treat
                 // as unchanged
                 if (*s || stricmp(basename(exeBuf.str), versionFile) != 0)
@@ -269,28 +271,18 @@ static void generateVersion(bool isApp) {
             }
         } else if (execute(diffIndexCmd, NULL, false) == 1)
             strcat(version, "+");
-    }
-
-    if (!*version) {
-        strcpy(version, oldVersion);
-        if (isApp && !strchr(version, '?'))
-            strcat(version, "?");
-    }
+    } else
+        strcpy(version, "Untracked");
 }
 
-static bool getOneVersion(char *name) {
+static void getOneVersion(char *name) {
     int type = setupContext(name);
-    int col;
-    if (strcmp(name, ".git") == 0)
-        return true;
-    if (type == OTHER)
-        return false;
+    if (type == OTHER || strcmp(name, ".git") == 0)
+        return;
 
     appName = basename(dirName);
     if (!*appName)
         appName = "-ROOT-";
-    sprintf(decorate, "--decorate-refs=tags/%s-r*", appName);
-    sprintf(tagPrefix, "tag: %s-r", appName);
     if (logPathIndex == 0) {
         for (char **p = logCmd; *p; p++)
             logPathIndex++;
@@ -301,40 +293,49 @@ static bool getOneVersion(char *name) {
     }
     ignoreCmd[ignorePathIndex] = diffIndexCmd[diffIndexPathIndex] = logCmd[logPathIndex] =
         fileName ? fileName : ".";
-    bool ignored = execute(ignoreCmd, &exeBuf, false) == 0;
-    if (ignored && !includeUntracked)
-        return true;
-    if (type == DIRECTORY) {
-        if (ignored)
-            strcpy(version, "Ignored");
-        else {
+    int ignored = -1;
+    if (!noGit) {
+        ignored = execute(ignoreCmd, &exeBuf, false);
+        if (ignored < 0) {
+            warn("Git not found");
+            noGit = true;
+        }
+    }
+    if ((ignored == 0 || ignored > 1) && !includeUntracked)
+        return;
+
+    sprintf(decorate, "--decorate-refs=tags/%s-r*", appName);
+    sprintf(tagPrefix, "tag: %s-r", appName);
+
+
+    if (ignored == 0 || ignored == 128)
+        strcpy(version, "Untracked");
+    else if (type == DIRECTORY) {
+        if (noGit || ignored == 1) {
             free(versionFile);
             versionFile = parseConfig(configFile);
             getOldVersion();
-            generateVersion(true);
+            *version = '\0'; // assume no version
+            if (!noGit)
+                generateVersion(true);
+            if (!*version) {
+                strcpy(version, oldVersion);
+                if (!strchr(version, '?'))
+                    strcat(version, "?");
+            }
             if (writeFile && (force || strcmp(version, oldVersion) != 0))
                 writeNewVersion(versionFile, version, date);
         }
-        col = printf("%s", appName);
-    } else {
-        if (ignored)
-            strcpy(version, "Ignored");
-        else {
-            strcpy(oldVersion, "Untracked");
-            generateVersion(false);
-            if (!includeUntracked && strcmp(version, "Untracked") == 0)
-                return true;
-        }
-        col = printf("%s", name);
-    }
-    if (col < vCol)
-        printf("%*s", vCol - col, "");
-    printf(" - %s\n", version);
-    return true;
+    } else if (ignored == 1)
+        generateVersion(false);
+    else if (noGit)
+        strcpy(version, "Unknown");
+
+    if (isdigit(*version) || includeUntracked)
+        printf("%-*s - %s\n", vCol, type == DIRECTORY ? appName : name, version);
 }
 
 int main(int argc, char **argv) {
-    int exitcode = 0;
     while (getopt(argc, argv, "dfqwuc:") != EOF) {
         switch (optopt) {
         case 'f':
@@ -367,15 +368,12 @@ int main(int argc, char **argv) {
                 vCol = (int)strlen(argv[i]);
     }
     vCol = optind < argc - 1 ? 24 : 1;
-    if (optind == argc) {
-        if (!getOneVersion("."))
-            exitcode = 1;
-    } else
-        while (optind < argc) {
-            if (!getOneVersion(argv[optind++]))
-                exitcode = 1;
-        }
+    if (optind == argc)
+        getOneVersion(".");
+    else
+        while (optind < argc)
+            getOneVersion(argv[optind++]);
+
     if (currentWorkingDir)
         (void)chdir(currentWorkingDir);
-    return exitcode;
 }
