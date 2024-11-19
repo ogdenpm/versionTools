@@ -71,7 +71,7 @@ typedef struct {
 } tag_t;
 
 static bool isPrefix(char const *str, char const *prefix) {
-    while (*prefix && tolower(*str++) == tolower(*prefix++))
+    while (*prefix && *str++ == *prefix++)
         ;
     return *prefix == '\0';
 }
@@ -258,7 +258,7 @@ int main(int argc, char **argv) {
         if (execute(diffIndexCmd, NULL, false) == 0)
             command = commitAmendCmd;
         else {
-            sprintf(messageStr, "\"%s: %s\"", version, message);
+            sprintf(messageStr, "\"%s - %s: %s\"", appName, version, message);
             command = *message ? commitCmd : commitEditCmd;
         }
         if (execute(command, NULL, true) == 0) {
