@@ -20,7 +20,6 @@ char const help[]    = "Usage:  %s [options]\n"
                        "Where options are:\n"
                        "  -r rev  use the specified revision for the new version file\n"
                        "  -m msg  use msg as the commit msg\n"
-                       "  -f      force creation assuming 'Y' response to any queries\n"
                        "  -c file set alternative configuration file instead of version.in\n"
                        "  -d      show debugging information\n";
 
@@ -214,11 +213,8 @@ static void show(char **p) {
 #endif
 
 int main(int argc, char **argv) {
-    while (getopt(argc, argv, "dfr:m:c:") != EOF) {
+    while (getopt(argc, argv, "dr:m:c:") != EOF) {
         switch (optopt) {
-        case 'f':
-            force = true;
-            break;
         case 'm':
             message = optarg;
             break;
