@@ -332,7 +332,8 @@ static void getOneVersion(char *name) {
         strcpy(version, "Unknown");
 
     if (isdigit(*version) || includeUntracked)
-        printf("%-*s - %s\n", vCol, type == DIRECTORY ? appName : name, version);
+        printf("%-*s %c %s\n", vCol, type == DIRECTORY ? appName : name,
+               type == DIRECTORY ? '-' : '+', version);
 }
 
 int main(int argc, char **argv) {
