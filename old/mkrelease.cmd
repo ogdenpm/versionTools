@@ -87,6 +87,7 @@ if [%GIT_BRANCH%] neq [master] if [%GIT_BRANCH%] neq [main] call :askYN YN "Not 
 :doCOMMIT
 
 call :gmtNow CTIME GIT_VERSION
+echo %CTIME%
 call :GET_VERSION_STRING 
 call :WRITE_OUT
 
