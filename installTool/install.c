@@ -82,9 +82,21 @@ char const *getToken(char **plist) {
     while (isspace(*list))
         list++;
     char const *token = list;
-
-    while (*list && *list != ',' && !isspace(*list))
-        list++;
+    if (*token == '"') {
+        list = strchr(token + 1, '"');
+        if (!list || !(list[1] == '\0' || isspace(list[1]) || list[1] == ',')) {
+            if (strchr(token, '\n'))
+                *strchr(token, '\n') = '\0';
+            warn("Invalid file name token %s - %s", token,
+                 list ? "Unexpected character after closing quote" : "Missing closing quote");
+            return *plist = "";
+        }
+        token++;
+        *list++ = '\0';
+    } else {
+        while (*list && *list != ',' && !isspace(*list))
+            list++;
+    }
     char *end = list;
     while (isspace(*list))
         list++;
@@ -183,32 +195,34 @@ int install(char const *cfgFile, char const *source, char const *root) {
         else if (!skip && *lp != '*' && stricmp(getToken(&lp), parent) == 0) {
             char const *target = getToken(&lp);
             char const *suffix = getToken(&lp);
-            if (*target == '+')
-                target = joinPath(root, target + 1);
-            char *t = dst;
-            for (char const *s = target; *s; s++) {
-                if (*s == '$' && (s[1] == 'd' || s[1] == 't'))
-                    t = addStr(t, *++s == 'd' ? nowDate : nowTime);
-                else
-                    *t++ = *s;
-            }
-            if (t != dst && !strchr(DIRSEP, t[-1]))
-                *t++ = DIRSEP[0];
-            for (char const *s = file; *s; s++) {
-                if (*s == '$' && (s[1] == 'd' || s[1] == 't'))
-                    t = addStr(t, *++s == 'd' ? nowDate : nowTime);
-                else {
-                    if (*s == '.' && *suffix && stricmp(s, ".exe") == 0)
-                        t = addStr(t, suffix);
-                    *t++ = *s;
+            if (*target) {
+                if (*target == '+')
+                    target = joinPath(root, target + 1);
+                char *t = dst;
+                for (char const *s = target; *s; s++) {
+                    if (*s == '$' && (s[1] == 'd' || s[1] == 't'))
+                        t = addStr(t, *++s == 'd' ? nowDate : nowTime);
+                    else
+                        *t++ = *s;
                 }
-            }
-            *t = '\0';
-            if (copyFile(source, dst))
-                printf("installed %s -> %s\n", file, dst);
-            else {
-                result = 1;
-                warn("Failed to install %s -> %s", file, dst);
+                if (t != dst && !strchr(DIRSEP, t[-1]))
+                    *t++ = DIRSEP[0];
+                for (char const *s = file; *s; s++) {
+                    if (*s == '$' && (s[1] == 'd' || s[1] == 't'))
+                        t = addStr(t, *++s == 'd' ? nowDate : nowTime);
+                    else {
+                        if (*s == '.' && *suffix && stricmp(s, ".exe") == 0)
+                            t = addStr(t, suffix);
+                        *t++ = *s;
+                    }
+                }
+                *t = '\0';
+                if (copyFile(source, dst))
+                    printf("installed %s -> %s\n", file, dst);
+                else {
+                    result = 1;
+                    warn("Failed to install %s -> %s", file, dst);
+                }
             }
         }
     }
