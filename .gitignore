@@ -348,3 +348,11 @@ MigrationBackup/
 
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
+
+# Mark's ignores
+Build/
+Install/
+*.ico
+install.cfg
+installScript.cfg
+.clang-format

@@ -19,7 +19,7 @@ Note with the port of the versioning tools to C, there have been some changes to
 
 The general format of the automatically generated version string is
 
-​	`year.month.day.(release| 'g' sha1)[+][?]`
+​	`year.month.day.(release | 'g' sha1)[+][?]`
 
 | Component      | Notes                                                        |
 | -------------- | ------------------------------------------------------------ |

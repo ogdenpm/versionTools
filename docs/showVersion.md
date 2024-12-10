@@ -30,7 +30,6 @@ The static information takes the form or #defines for C/C++ and the current set 
 | APP_DESCRIPTION | A brief description of the application - only shown for full version info |
 | APP_CONTRIBUTOR | A list of contributors - only shown for full version info    |
 | ALL_EMAIL       | A support email address - only shown for full version info   |
-| APP_LIBS        | A comma separated list of any library version strings. Although somewhat niche, it is used when shared code has been factored out into its own library. - only shown for full version info |
 
 Although the code to display the version information includes appinfo.h, for groups of applications it may make sense for appinfo.h, to include app specific #defines and to provide default values for other items.
 
@@ -95,10 +94,10 @@ For full version information, the following extra information is shown
 [APP_DESCRIPTION]
 [Contributors: APP_CONTRIBUTOR]
 architecture " build: " build date
-+ shared files / libraries information
 ["Support email: " APP_EMAIL]
 
-where architecture reflects code target 32/64 bit and whether it is a debug version
+Where architecture reflects code target 32/64 bit and whether it is a debug version.
+For MSVC and GCC the compiler version is also shown
 ```
 
 Using the zas example, the simple version information shown is
@@ -113,16 +112,13 @@ and for the full version information
 zas-3.09 (C) HI-TECH <port Mark Ogden> 2023.4.23.5
 zas-3.09 reverse engineered to modern C
 Contributors: Andrey Nikitin
-64 bit debug build: Apr 23 2023 19:56:27
-+ showVersion 2023.4.23.14 [ab26da9]
+64 bit debug build: (msvc 19.42.34435) Dec 10 2024 11:31:33
 Support email: support@mark-ogden.uk
 ```
-
-Note the showVersion version string is displayed as it's code is managed outside the core zas code. It is therefore possible for the same version of zas, with different build dates, to have different showVersion code. This is comparable to rebuilding after system libraries have been changed.
 
 ------
 
 ```
-Updated by Mark Ogden 23-Apr-2023
+Updated by Mark Ogden 10-Dec-2024
 ```
 
