@@ -42,7 +42,7 @@ char const *tagListCmd[] = { "git", "tag", "-l", "-i", tagPattern, NULL };
 char const *tagDate[]    = { "git", "log", "-1", "--format=%ct", tagPrefix, NULL };
 char const *addCmd[]     = { "git", "add", NULL, NULL };
 int addPathIndex;
-char const *diffIndexCmd[]   = { "git", "diff-index", "--quiet", "HEAD", "--", ".", NULL };
+char const *diffIndexCmd[]   = { "git", "diff-index", "--ignore-cr-at-eol", "--quiet", "HEAD", "--", ".", NULL };
 char const *commitAmendCmd[] = { "git", "commit", "--amend", authorDate, "--", ".", NULL };
 char const *commitEditCmd[]  = {
     "git", "commit", "-m", messageStr, "-e", authorDate, "--", ".", NULL
