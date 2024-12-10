@@ -3,7 +3,7 @@
  * stream of text from a system process.
  */
 #include <ctype.h>
-#include <direct.h>
+
 #include <inttypes.h>
 #include <limits.h>
 #include <stdarg.h>
@@ -14,6 +14,11 @@
 #include <sys/stat.h>
 #include <time.h>
 
+#ifdef _MSC_VER
+#include <direct.h>
+#else
+#include <unistd.h>
+#endif
 #include "support.h"
 
 char const help[] = "Usage:  %s [options] [directory | file]*\n"
@@ -39,10 +44,10 @@ char *currentWorkingDir;
 char decorate[128]  = "--decorate-refs=tags/appName-r*"; // updated once appName known
 char tagPrefix[128] = "tag: appName-r";                  // updated once appName known
 
-char *logCmd[]      = { "git", "log", "-1", decorate, "--format=g%h,%ct,%D", "--", NULL, NULL };
-char *diffIndexNameCmd[] = { "git", "diff-index", "--name-only", "HEAD", "--", ".", NULL };
-char *diffIndexCmd[]     = { "git", "diff-index", "--quiet", "HEAD", "--", NULL, NULL };
-char *ignoreCmd[]        = { "git", "check-ignore", NULL, NULL };
+char const *logCmd[]      = { "git", "log", "-1", decorate, "--format=g%h,%ct,%D", "--", NULL, NULL };
+char const *diffIndexNameCmd[] = { "git", "diff-index", "--name-only", "HEAD", "--", ".", NULL };
+char const *diffIndexCmd[]     = { "git", "diff-index", "--quiet", "HEAD", "--", NULL, NULL };
+char const *ignoreCmd[]        = { "git", "check-ignore", NULL, NULL };
 
 int logPathIndex;
 int diffIndexPathIndex;
@@ -50,7 +55,6 @@ int ignorePathIndex;
 
 string_t exeBuf;
 
-bool debug;
 bool quiet;
 bool includeUntracked;
 
@@ -184,13 +188,13 @@ static int setupContext(char *path) {
         warn("Can't resolve directory/file %s\n", path);
     else if (stat(path, &sb) != 0)
         warn("Cannot access %s", path);
-    else if (sb.st_mode & _S_IFDIR) {
+    else if (sb.st_mode & S_IFDIR) {
         if (chdir(path) == 0) {
             fileName = NULL;
             return DIRECTORY;
         }
         warn("Cannot change to directory %s", path);
-    } else if (sb.st_mode & _S_IFREG) {
+    } else if (sb.st_mode & S_IFREG) {
         char *fname = (char *)basename(dirName);
         fileName    = safeStrdup(fname);
         *--fname    = '\0'; // remove filename
@@ -202,11 +206,13 @@ static int setupContext(char *path) {
     return OTHER;
 }
 
+
+// note the % 10000 and % 100 are to stop GCC complaining about possible overrun
 static void initAsciiDate() {
     time_t tval;
     time(&tval);
     struct tm *timeInfo = gmtime(&tval);
-    sprintf(date, "%04d-%02d-%02d %02d:%02d:%02d", timeInfo->tm_year + 1900, timeInfo->tm_mon + 1,
+    sprintf(date, "%04u-%02u-%02u %02u:%02u:%02u", timeInfo->tm_year + 1900, timeInfo->tm_mon + 1,
             timeInfo->tm_mday, timeInfo->tm_hour, timeInfo->tm_min, timeInfo->tm_sec);
 }
 
@@ -215,7 +221,7 @@ static char *ctimeVersion(char *timeStr) {
     time_t tval         = strtoull(timeStr, NULL, 10);
 
     struct tm *timeInfo = gmtime(&tval);
-    sprintf(verStr, "%04d.%d.%d", timeInfo->tm_year + 1900, timeInfo->tm_mon + 1,
+    sprintf(verStr, "%04u.%u.%u", timeInfo->tm_year + 1900, timeInfo->tm_mon + 1,
             timeInfo->tm_mday);
     return verStr;
 }
@@ -241,7 +247,7 @@ static void generateVersion(bool isApp) {
             *s = '\0';
         char *pCtime = s ? s + 1 : "";
         char rev[128];
-        if (s = strchr(pCtime, ',')) {
+        if ((s = strchr(pCtime, ','))) {
             if (isPrefix(++s, tagPrefix)) { // skip comma "tag: " appname "-r"
                 s += strlen(tagPrefix);
                 if (isdigit(*s) &&
@@ -256,8 +262,6 @@ static void generateVersion(bool isApp) {
             }
         }
         sprintf(version, "%s.%s", ctimeVersion(pCtime), pSha1);
-
-        int dResult = execute(diffIndexNameCmd, &exeBuf, false);
 
         if (isApp) { // for app check don't consider the version file
             if (execute(diffIndexNameCmd, &exeBuf, false) == 0 && exeBuf.str[0]) {
@@ -283,11 +287,11 @@ static void getOneVersion(char *name) {
     if (!*appName)
         appName = "-ROOT-";
     if (logPathIndex == 0) {
-        for (char **p = logCmd; *p; p++)
+        for (char const **p = logCmd; *p; p++)
             logPathIndex++;
-        for (char **p = diffIndexCmd; *p; p++)
+        for (char const **p = diffIndexCmd; *p; p++)
             diffIndexPathIndex++;
-        for (char **p = ignoreCmd; *p; p++)
+        for (char const **p = ignoreCmd; *p; p++)
             ignorePathIndex++;
     }
     ignoreCmd[ignorePathIndex] = diffIndexCmd[diffIndexPathIndex] = logCmd[logPathIndex] =
@@ -371,6 +375,7 @@ int main(int argc, char **argv) {
         while (optind < argc)
             getOneVersion(argv[optind++]);
 
-    if (currentWorkingDir)
-        (void)chdir(currentWorkingDir);
+    if (currentWorkingDir && chdir(currentWorkingDir))
+        ;
+
 }
