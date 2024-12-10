@@ -23,7 +23,6 @@ appInfo_t appInfo = {
 #ifdef APP_CONTRIBUTORS
     .contributors = APP_CONTRIBUTORS,
 #endif
-    .libs    = libs,
     .email   = APP_EMAIL,
     .version = GIT_VERSION,
     .build = __DATE__ " " __TIME__

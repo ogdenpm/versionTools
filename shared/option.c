@@ -5,6 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#ifdef linux
+#include <limits.h>
+#endif
 /*
  * modified version of the public domain AT&T getopt
  * in addition to : being used to indicate a required argument to the option
@@ -20,7 +23,7 @@
 
 int optind = 1;
 int optopt;
-char const *optarg;
+char *optarg;
 
 static char *programName = "???";
 
@@ -30,7 +33,7 @@ static char *programName = "???";
 /// Options must be the only ones present
 /// </summary>
 /// <param name="s">The s.</param>
-void chkStdOptions(int argc, char **argv) {
+void chkStdOptions(int argc, char * const *argv) {
     programName = argv[0];
     if (argc == 2) {
         if (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "-V") == 0) {
@@ -58,8 +61,8 @@ void chkStdOptions(int argc, char **argv) {
 /// the return value. In addition the following globals are updated optopt contains the option
 /// selected, optarg is the argument or NULL optind is index of the next argv argument to process
 /// </returns>
-int getopt(int argc, char **argv, char const *opts) {
-    static char const *place = ""; // force new arg
+int getopt(int argc, char * const *argv, char const *opts) {
+    static char *place = ""; // force new arg
     char *cp                 = NULL;
 
     if (!*place) {
@@ -170,9 +173,6 @@ void showVersion(FILE *fp, int what) {
 
 
             fprintf(fp, "%s\n", appInfo.build);
-
-            for (char const * const *p = appInfo.libs; *p; p++)
-                fprintf(fp, "Uses %s\n", *p);
             fprintf(fp, "Support email: %s\n", appInfo.email);
         }
     }

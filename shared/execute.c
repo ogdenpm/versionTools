@@ -1,40 +1,62 @@
-#include "support.h"
+
 #include <ctype.h>
 #include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#ifdef _MSC_VER
 #include <io.h>
 #include <process.h>
-#include <stdio.h>
+typedef intptr_t pid_t;
+#define PIPE_BUF    4096
+#define pipe(p) _pipe(p, PIPE_BUF, _O_TEXT | O_NOINHERIT)
+#else
+#include <unistd.h>
+#include <limits.h>
+#include <sys/wait.h>
+#endif
+
+#include "support.h"
+
 
 #define PIPELEN 256
 enum { PREAD = 0, PWRITE = 1 };
 
+
+
 int execute(char const *const *cmd, string_t *str, bool isInteractive) {
     int pipes[2];
-    char buf[512];
+    char buf[PIPE_BUF];
     int oldStdout;
     int oldStderr;
 
     if (str) {
         str->pos = 0;       // reset any previous string
-        if (_pipe(pipes, PIPELEN, _O_TEXT | O_NOINHERIT) == -1) {
+        if (pipe(pipes) == -1) {
             fprintf(stderr, "pipe failed\n");
             exit(1);
         }
         if (!isInteractive) {
-            oldStdout = dup(_fileno(stdout));
-            dup2(pipes[PWRITE], _fileno(stdout));
+            oldStdout = dup(fileno(stdout));
+            dup2(pipes[PWRITE], fileno(stdout));
         }
-        oldStderr = dup(_fileno(stderr));
-        dup2(pipes[PWRITE], _fileno(stderr));
+        oldStderr = dup(fileno(stderr));
+        dup2(pipes[PWRITE], fileno(stderr));
         close(pipes[PWRITE]);
     }
-    int result;
-
-    intptr_t pid = _spawnvp(P_NOWAIT, "git.exe", cmd);
+    int status;
+    pid_t pid;
+#ifdef _MSC_VER
+    pid = spawnvp(P_NOWAIT, "git.exe", cmd);
+#else
+    if ((pid = fork()) == 0) {
+        execvp("git", (char * const *)cmd);
+        fatal("exec failed");
+    }
+#endif
     if (str) {
         if (!isInteractive)
-            dup2(oldStdout, _fileno(stdout));
-        dup2(oldStderr, _fileno(stderr));
+            dup2(oldStdout, fileno(stdout));
+        dup2(oldStderr, fileno(stderr));
     }
     if (pid > 0) {
         if (str) {
@@ -44,10 +66,16 @@ int execute(char const *const *cmd, string_t *str, bool isInteractive) {
                 appendBuffer(str, buf, actual);
             appendBuffer(str, "", 1);
         }
-        _cwait(&result, pid, WAIT_CHILD);
+#ifdef _MSC_VER
+        _cwait(&status, pid, WAIT_CHILD);
+#else
+        waitpid(pid, &status, 0);
+        if (WIFEXITED(status))
+            status = WEXITSTATUS(status);
+#endif
     } else
-        result = -1;
+        status = -1;
     if (str)
         close(pipes[PREAD]);
-    return result;
+    return status;
 }

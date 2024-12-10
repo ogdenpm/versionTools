@@ -1,6 +1,10 @@
 #pragma once
 #include <stdbool.h>
 #include <stdio.h>
+#ifndef _MSC_VER
+#define stricmp strcasecmp
+#endif
+
 // support.c
 extern bool debug;
 _Noreturn void fatal(char const *fmt, ...);
@@ -37,12 +41,12 @@ void appendBuffer(string_t *str, char *buf, int len);
     run the application
 */
 extern char const help[];  // user supplied
-extern char const *optarg; // optional argument (or error message)
+extern char *optarg; // optional argument (or error message)
 extern int optind;         // current index into argv
 extern int optopt;         // option scanned
 
-int getopt(int argc, char **argv, const char *options);
-void chkStdOptions(int argc, char **argv);
+int getopt(int argc, char * const *argv, const char *options);
+void chkStdOptions(int argc, char * const *argv);
 void showVersion(FILE *fp, int what);
 
 // execute.c

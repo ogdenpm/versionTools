@@ -14,7 +14,6 @@ typedef struct {
     char const *mods;
     char const *description;
     char const *contributors;
-    char * const *libs;
     char const *email;
     char const *version;
     char const *build;

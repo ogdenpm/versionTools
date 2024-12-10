@@ -11,7 +11,7 @@
 // provides opportunity to set common APP_xxx
 #ifndef _APPINFO_H_
 #define _APPINFO_H_
-#include <_appinfo.h>
+#include "_appinfo.h"
 
 // common defaults if not specified
 #ifndef APP_PRODUCT
