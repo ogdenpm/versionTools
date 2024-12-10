@@ -188,10 +188,10 @@ int install(char const *cfgFile, char const *source, char const *root) {
         char *lp = line;
         while (isspace(*lp))
             lp++;
-        if (*lp == '-' && contains(lp + 1, file))
-            skip = true;
-        else if (*lp == '+' && contains(lp + 1, file))
-            skip = false;
+        if (*lp == '-')
+            skip = contains(lp + 1, file);
+        else if (*lp == '+')
+            skip = !contains(lp + 1, file);
         else if (!skip && *lp != '*' && stricmp(getToken(&lp), parent) == 0) {
             char const *target = getToken(&lp);
             char const *suffix = getToken(&lp);
