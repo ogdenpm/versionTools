@@ -45,8 +45,8 @@ char decorate[128]  = "--decorate-refs=tags/appName-r*"; // updated once appName
 char tagPrefix[128] = "tag: appName-r";                  // updated once appName known
 
 char const *logCmd[]      = { "git", "log", "-1", decorate, "--format=g%h,%ct,%D", "--", NULL, NULL };
-char const *diffIndexNameCmd[] = { "git", "diff-index", "--name-only", "HEAD", "--", ".", NULL };
-char const *diffIndexCmd[]     = { "git", "diff-index", "--quiet", "HEAD", "--", NULL, NULL };
+char const *diffIndexNameCmd[] = { "git", "diff-index", "--name-only", "--ignore-cr-at-eol","HEAD", "--", ".", NULL };
+char const *diffIndexCmd[]     = { "git", "diff-index", "--quiet", "--ignore-cr-at-eol", "HEAD", "--", NULL,  NULL };
 char const *ignoreCmd[]        = { "git", "check-ignore", NULL, NULL };
 
 int logPathIndex;
