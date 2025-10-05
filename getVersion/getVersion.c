@@ -94,8 +94,8 @@ static char *scanNumber(char *s, int low, int high) {
 static char *scanRevision(char *s) {
     char *t = s;
     if (*t == 'g') {
-        while (isxdigit(*t))
-            t++;
+        while (isxdigit(*++t))
+            ;
         return t != s + 1 ? t : NULL;
     }
     if (isdigit(*t) && *t != '0') { // valid for both old and new
@@ -124,7 +124,7 @@ static bool parseVersion(char *line) {
         // scan forward looking for 20\d\d\.1?\d\.[123]?\d\.revision
         char *end;
         if ((end = scanNumber(start, 2000, 2099)) && (end = scanNumber(end, 1, 12)) &&
-            (end = scanNumber(end, 1, 31)) && (end = scanRevision(end))) {
+            (end = scanNumber(end, 1, 31)) && (end = scanRevision(end)) && end) {
             if (*end == '+')
                 end++;
             if (*end == '?')
@@ -271,7 +271,6 @@ static void getOneVersion(char *name) {
         warn("Cannot change to directory %s", context);
         return;
     }
-    char *root = strchr(context, '\0');
 
     sprintf(decorate, "--decorate-refs=tags/%s-r*", appName);
     sprintf(tagPrefix, "tag: %s-r", appName);
@@ -293,7 +292,8 @@ static void getOneVersion(char *name) {
     } else
         generateVersion(false);
 
-    (void)chdir(currentWorkingDir);
+    if (chdir(currentWorkingDir))
+        ;
 
     if (isdigit(*version) || (type == DIRECTORY && writeFile) || includeUntracked)
         printf("%-*s %c %s\n", vCol, appName, type == DIRECTORY ? '-' : '+',
