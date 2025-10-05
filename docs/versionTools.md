@@ -35,7 +35,7 @@ Note the previous windows batch, perl and powershell utilities have not been upd
 
 ### getVersion
 
-This utility is the primary utility used to generate a version string for an application. It  should be run from within the directory for which the version string is required.
+This utility is the primary utility used to generate a version string for an application.
 
 ```
 Usage:  getversion [options] [directory | file]*
@@ -43,8 +43,9 @@ Where options are:
   -w      write new version file if version has updated
   -f      force write new version file
   -c file set alternative configuration file instead of version.in
-  -d      show debugging information
+  -u      include untracked/ignored files and directories
 If no directory or file is specified '.' is assumed
+Note -w or -f are only relevant for directories
 
 Also supports single arguments -v, -V for version info and -h for help
 
@@ -54,19 +55,32 @@ See also using version.in below
 
 #### How it works
 
-The tool uses 3 git commands
+The tool uses up to 3 git commands to generate the version number as follows
 
-```
-git log			  used to get the commit date, sha1 and any associated tag
-git diff-index	  used to see if files have changed. The version file itself is ignored
-git check-ignore  used to flag ignored files which may previously been in the repository
-```
+For directories
 
-1. Using the above information the commit time is converted into the year.month.day component.
-3. For a directory if the commit has an associated tag of the form {dir}-r{release, where {dir} is the directory containing the source,  then the {release} is used, else the sha1 is added.
-4. Finally if there are uncommitted files the plus sign is added.
+1. git log is used to get the commit date, sha1 and any associated tag associated
+2. If Git is present and `git log` returns useful information, it is used as follows
+   - the commit time is converted into the year.month.day component
+   - if the commit has an associated tag of the form {dir}-r{release}, where {dir} is the directory containing the source and release starts with a digit,  then the {release} is added, else the sha1 is added. Note in adding {release} a dash is inserted between the leading digits and any other characters.
+   - finally `git diff-index` is run to check if commits are pending in the directory, if they are then a '+' is added to the end
+     Note the version file is excluded from this check
+3. else if useful information and a previously generated version file exists
+   - The version in the old version file is extracted and if not already present, a '?' suffix is added.
+4. else
+   - The version string is set to xxxx.xx.xx.x?
 
-If git isn't present, then for directories the version number uses the  information stored in the last generated version file with a question mark appended if not already present or `xxxx.xx.xx.x?` if there is no previous version. For files the version string is set to `Untracked`.
+For files
+
+1. git log is used to get the commit date, sha1 and any associated tag associated
+2. if Git is present and `git log` returns useful information and `git status` indicates the file hasn't been removed, then
+   - the commit time is converted into the year.month.day component
+   - if the commit has an associated tag of the form {dir}-r{release, where {dir} is the directory containing the source,  then the {release} is used, else the sha1 is added.
+   - finally git diff-index is run to check if commits is pending on the file, if it is then a '+' is added to the end
+3. else
+   - The version string is set to xxxx.xx.xx.x?
+
+Note: In the console listing xxxx.xx.xx.x? is shown as Untracked.
 
 This approach allows some support for builds where a snapshot is taken from GitHub, rather than using a repository clone. To achieve this, generated version file is committed in the repository. The release tool **makeRelease** updates this file before the commit with a new release number, but unfortunately a normal commit, uses the existing release number or shar1, most likely with a plus sign suffix. It is therefore not recommended to create builds using snapshots of informally released  commits. Also be aware that all snapshot builds that use **getVersion** will have a '?' appended to the version string, to indicate that the version is not being tracked.
 
@@ -290,6 +304,6 @@ The '-' will exclude only the named files from processing. -* disables all proce
 ------
 
 ```
-Updated by Mark Ogden 19-Nov-2024
+Updated by Mark Ogden 15-Oct-2025
 ```
 
