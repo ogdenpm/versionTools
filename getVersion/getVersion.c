@@ -239,13 +239,15 @@ static void generateVersion(bool isApp) {
         // check for tag: appname-r
         if ((s = strchr(pCtime, ',')) && isPrefix(++s, tagPrefix)) {
             s += strlen(tagPrefix);
-            char *t = rev;
-            while (isdigit(*s))
-                *t++ = *s++;
+            if (isdigit(*s)) {
+                char *t = rev;
+                while (isdigit(*s))
+                    *t++ = *s++;
 
-            if (*s && *s != '-') // add qualifier if needed
-                *t++ = '-';
-            strcpy(t, s);
+                if (*s && *s != '-') // add qualifier if needed
+                    *t++ = '-';
+                strcpy(t, s);
+            }
         }
 
         sprintf(version, "%s.%s", ctimeVersion(pCtime), rev);
