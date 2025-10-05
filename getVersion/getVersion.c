@@ -52,9 +52,10 @@ char const *diffIndexNameCmd[] = { "git", "diff-index", "--name-only", "--ignore
                                    NULL };
 char const *diffIndexCmd[] = { "git", "diff-index", "--quiet", "--ignore-cr-at-eol", "-z", "HEAD",
                                "--",  fileName,     NULL };
-char const *ignoreCmd[]    = { "git", "check-ignore", "-q", fileName, NULL };
+char const *statusCmd[]    = { "git", "status", "-z", "--ignored", "-u", fileName, NULL };
 
 string_t exeBuf;
+string_t statusBuf;
 
 bool includeUntracked;
 
@@ -134,13 +135,10 @@ static bool parseVersion(char *line) {
             return true;
         }
     }
-
-    if (strstr(line, "xxxx.xx.xx.x?")) { // handle the unknown version
+    if (strstr(line, "xxxx.xx.xx.x?")) {
         strcpy(oldVersion, "xxxx.xx.xx.x?");
         return true;
     }
-
-    oldVersion[0] = '\0';
     return false;
 }
 
@@ -156,10 +154,6 @@ static void getOldVersion() {
                 break;
         }
         fclose(fp);
-    }
-    if (*oldVersion == '\0') {
-        force = true;
-        strcpy(oldVersion, "xxxx.xx.xx.x?");
     }
 }
 
@@ -214,19 +208,23 @@ static char *ctimeVersion(char *timeStr) {
     return verStr;
 }
 
-
 static void generateVersion(bool isApp) {
     int lResult;
+    strcpy(version, "xxxx.xx.xx.x?");
     if (noGit || (lResult = execute(logCmd, &exeBuf, false)) < 0) {
         if (!noGit) {
             warn("Cannot run git");
             noGit = true;
         }
-        strcpy(version, "xxxx.xx.xx.x?");
         return;
     }
-
     if (lResult == 0 && exeBuf.str[0]) {
+        if (!isApp) { // for files check still live in repo
+            if (execute(statusCmd, &statusBuf, false) != 0 || statusBuf.str[0] == '!' ||
+                statusBuf.str[0] == '?')
+                return;
+        }
+
         // simple split on comma
 
         char *s;
@@ -261,8 +259,7 @@ static void generateVersion(bool isApp) {
             }
         } else if (execute(diffIndexCmd, NULL, false) == 1)
             strcat(version, "+");
-    } else
-        strcpy(version, "xxxx.xx.xx.x?");
+    }
 }
 
 static void getOneVersion(char *name) {
@@ -274,8 +271,7 @@ static void getOneVersion(char *name) {
         warn("Cannot change to directory %s", context);
         return;
     }
-    char *root  = strchr(context, '\0');
-
+    char *root = strchr(context, '\0');
 
     sprintf(decorate, "--decorate-refs=tags/%s-r*", appName);
     sprintf(tagPrefix, "tag: %s-r", appName);
@@ -285,14 +281,13 @@ static void getOneVersion(char *name) {
         versionFile = parseConfig(configFile);
 
         generateVersion(true);
-        if (*version == 'x') {
-            getOldVersion();
-         
-            char *s = strchr(strcpy(version, oldVersion), '\0');
-            if (s[-1] != '?')
-                strcpy(s, "?");
-        }
+        getOldVersion();
+        if (*version == 'x' && *oldVersion) {
+            strcpy(version, oldVersion);
+            if (!strchr(version, '?'))
+                strcat(version, "?");
 
+        }
         if (writeFile && (force || strcmp(version, oldVersion) != 0))
             writeNewVersion(versionFile, version, date);
     } else
@@ -337,5 +332,4 @@ int main(int argc, char **argv) {
     else
         while (optind < argc)
             getOneVersion(argv[optind++]);
-
 }
