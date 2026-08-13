@@ -55,7 +55,7 @@ char const *diffIndexCmd[] = { "git", "diff-index", "--quiet", "--ignore-cr-at-e
                                "--",  fileName,     NULL };
 char const *statusCmd[]    = { "git", "status", "-z", "--ignored", "-u", fileName, NULL };
 
-char const *projectExtensions[] = { ".vcxproj", ".csproj", ".sln", ".vcxproj.filters" };
+char const *projectExtensions[] = { ".vcxproj", ".csproj", ".vbproj", ".sln", ".vcxproj.filters" };
 
 string_t exeBuf;
 string_t statusBuf;
@@ -213,7 +213,7 @@ static char *ctimeVersion(char *timeStr) {
 }
 
 
-static bool isProjectFile(char *ext) {
+static bool isProjectFile(char const *ext) {
     for (int i = 0; i < sizeof(projectExtensions) / sizeof(projectExtensions[0]); i++) {
         if (stricmp(ext, projectExtensions[i]) == 0) {
             return true;
@@ -267,7 +267,7 @@ static void generateVersion(bool isApp) {
         if (isApp) { // for app check ignore changes to the version file
             if (execute(diffIndexNameCmd, &exeBuf, false) == 0) {
                 for (char *filePtr = exeBuf.str; filePtr < exeBuf.str + exeBuf.pos && *filePtr; filePtr += strlen(filePtr) + 1) {
-                    char *file = basename(filePtr);
+                    char const *file = basename(filePtr);
                     if (stricmp(file, versionFile) != 0) {   // generated version files are ignored
                         if (!ignoreProjectFiles || !isPrefix(file, appName) || !isProjectFile(file + strlen(appName))) { 
                             // not project file or ignored
