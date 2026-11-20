@@ -20,8 +20,9 @@
 #define DIRSEP "/"
 #endif
 
-char const help[] = "Usage: %s source root [configFile]\n"
+char const help[] = "Usage: %s [-f] source root [configFile]\n"
                     "Where\n"
+                    "  -f           force installation even if version hasn't changed\n"
                     "  source       is the file to be installed\n"
                     "  root         is the solution level directory where install.cfg is found\n"
                     "  configFile   sets an alternative configuation file from install.cfg\n";
@@ -30,6 +31,11 @@ char dst[_MAX_PATH];
 
 char nowDate[] = "yyyymmdd";
 char nowTime[] = "hhmmss";
+
+char *verCmd[] = { "", "-v", NULL };
+char srcVer[64]; // source version string
+char dstVer[64]; // destination version string
+bool nocheck;    // if true then do not check version of destination file
 
 char *joinPath(char const *path, char const *name) {
     int lenPath = (int)strlen(path);
@@ -75,6 +81,20 @@ bool mkPath(char *file) {
         s++;
     }
     return true;
+}
+
+bool getVerStr(char const *file, char *str) {
+    static string_t buf;
+    verCmd[0] = (char *)file;
+    if (execute(verCmd, &buf, false) == 0) {
+        char *s = strchr(buf.str, '\n');
+        if (s)
+            *s = '\0';
+        s = strrchr(buf.str, ' ');
+        strcpy(str, s ? s + 1 : buf.str);
+    } else
+        *str = '\0';
+    return *str != '\0';
 }
 
 char const *getToken(char **plist) {
@@ -128,6 +148,14 @@ void initDate() {
 bool copyFile(char const *src, char *dst) {
     if (!mkPath(dst))
         return false;
+    struct stat buf;
+    if (stat(dst, &buf) == 0 && !nocheck && getVerStr(dst, dstVer)) {
+        if (strcmp(srcVer, dstVer) == 0) {
+            printf("Skipping %s -> %s", src, dst);
+            return true;
+        }
+    }
+
     struct stat sinfo; // for timestamps
     FILE *sfp = fopen(src, "rb");
     if (!sfp || fstat(fileno(sfp), &sinfo))
@@ -149,6 +177,7 @@ bool copyFile(char const *src, char *dst) {
     fclose(dfp);
     struct utimbuf times = { .actime = sinfo.st_atime, .modtime = sinfo.st_mtime };
     utime(dst, &times);
+    printf("Installed %s -> %s\n", basename(src), dst);
     return true;
 }
 
@@ -182,6 +211,10 @@ int install(char const *cfgFile, char const *source, char const *root) {
     if (!fp)
         fatal("Cannot open configuration file %s", cfgFile);
 
+    if (!getVerStr(source, srcVer)) {
+        warn("Failed to get version string for %s", source);
+        nocheck = true;
+    }
     char line[MAXLINE];
     int result = 0;
     while (fgets(line, MAXLINE, fp)) {
@@ -217,9 +250,7 @@ int install(char const *cfgFile, char const *source, char const *root) {
                     }
                 }
                 *t = '\0';
-                if (copyFile(source, dst))
-                    printf("installed %s -> %s\n", file, dst);
-                else {
+                if (!copyFile(source, dst)) {
                     result = 1;
                     warn("Failed to install %s -> %s", file, dst);
                 }
@@ -232,6 +263,11 @@ int install(char const *cfgFile, char const *source, char const *root) {
 int main(int argc, char **argv) {
 
     chkStdOptions(argc, argv);
+    if (argc > 1 && stricmp(argv[1], "-f") == 0) {
+        nocheck = true;
+        argv++;
+        argc--;
+    }
     if (argc < 3 || argc > 4)
         usage("Incorrect usage");
     char const *source     = argv[1];
