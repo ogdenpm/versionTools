@@ -256,11 +256,13 @@ Note files with relative and full paths are supported, however files copied to t
 This command is typically run post build to copy a built file to one or more locations.
 
 ```
-usage: install file_with_path installRoot [configFile]
+usage: install [-f] file_with_path installRoot [configFile]
 configFile defaults to installRoot\install.cfg
 ```
 
- **install.cfg** contains lines of the form
+The install command now checks whether the versions of an existing file matches the new one and if it does it will skip the copy unless -f is specified. This avoids needless overwriting when the source hasn't changed.  
+
+**install.cfg** contains lines of the form
 
 ```
 srcDir dir [suffix]
