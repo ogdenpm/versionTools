@@ -1,0 +1,14 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="getVersion/getVersion.vcxproj" Id="32e43909-b9cb-4dd7-84f2-6d5a7e514642">
+    <BuildDependency Project="installTool/installTool.vcxproj" />
+  </Project>
+  <Project Path="installTool/installTool.vcxproj" Id="701c7b74-11e4-4490-b83e-13d47e0e8673" />
+  <Project Path="makeRelease/makeRelease.vcxproj" Id="a5dd3c35-9ab7-47c9-9662-569976b8c773">
+    <BuildDependency Project="installTool/installTool.vcxproj" />
+  </Project>
+  <Project Path="shared/shared.vcxitems" Id="695d41a5-347e-4670-9dfc-51d63c3d02c2" />
+</Solution>

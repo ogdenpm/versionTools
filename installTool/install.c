@@ -85,6 +85,7 @@ bool mkPath(char *file) {
 
 bool getVerStr(char const *file, char *str) {
     static string_t buf;
+
     verCmd[0] = (char *)file;
     if (execute(verCmd, &buf, false) == 0) {
         char *s = strchr(buf.str, '\n');
@@ -211,7 +212,10 @@ int install(char const *cfgFile, char const *source, char const *root) {
     if (!fp)
         fatal("Cannot open configuration file %s", cfgFile);
 
-    if (!getVerStr(source, srcVer)) {
+    char *s = strrchr(srcVer, '.');
+    if (!s || stricmp(s, ".exe") != 0)
+        nocheck = true;
+    else if (!getVerStr(source, srcVer)) {
         warn("Failed to get version string for %s", source);
         nocheck = true;
     }
