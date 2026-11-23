@@ -212,7 +212,7 @@ int install(char const *cfgFile, char const *source, char const *root) {
     if (!fp)
         fatal("Cannot open configuration file %s", cfgFile);
 
-    char *s = strrchr(srcVer, '.');
+    char *s = strrchr(source, '.');
     if (!s || stricmp(s, ".exe") != 0)
         nocheck = true;
     else if (!getVerStr(source, srcVer)) {
